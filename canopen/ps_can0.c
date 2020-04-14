@@ -72,6 +72,9 @@
 #ifndef TESTAPP_GEN
 XCanPs CanInstance; /* Instance of the Can driver */
 INTC IntcInstance;  /* Instance of the Interrupt Controller driver */
+
+extern XScuGic xInterruptController;
+
 #endif
 
 u32 RxFrame[XCANPS_MAX_FRAME_SIZE_IN_WORDS];
@@ -112,7 +115,8 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
  *
  *****************************************************************************/
 #ifndef TESTAPP_GEN
-int PsCan0Init() {
+int PsCan0Init()
+{
   int Status;
 
   xil_printf("ps can0 starts initialization!\r\n");
@@ -120,9 +124,10 @@ int PsCan0Init() {
   /*
    * Run the Can interrupt example.
    */
-  Status = CanPsIntrInit(&IntcInstance, &CanInstance, CAN_DEVICE_ID,
+  Status = CanPsIntrInit(&xInterruptController, &CanInstance, CAN_DEVICE_ID,
                          CAN_INTR_VEC_ID);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     xil_printf("ps can0 Initialization failed!\r\n");
     return XST_FAILURE;
   }
@@ -154,7 +159,8 @@ int PsCan0Init() {
  *
  ******************************************************************************/
 int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
-                  u16 CanIntrId) {
+                  u16 CanIntrId)
+{
   int Status;
   XCanPs_Config *ConfigPtr;
 
@@ -162,7 +168,8 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
    * Initialize the Can device.
    */
   ConfigPtr = XCanPs_LookupConfig(CanDeviceId);
-  if (ConfigPtr == NULL) {
+  if (ConfigPtr == NULL)
+  {
     return XST_FAILURE;
   }
   XCanPs_CfgInitialize(CanInstPtr, ConfigPtr, ConfigPtr->BaseAddr);
@@ -172,7 +179,8 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
    * device and the driver.
    */
   Status = XCanPs_SelfTest(CanInstPtr);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return XST_FAILURE;
   }
 
@@ -200,26 +208,36 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
   RecvDone = FALSE;
   LoopbackError = FALSE;
 
+  xil_printf("set up interrupt system!\n");
   /*
    * Connect to the interrupt controller.
    */
   Status = SetupInterruptSystem(IntcInstPtr, CanInstPtr, CanIntrId);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
+    xil_printf("interrupt system set up failed!\n");
     return XST_FAILURE;
   }
 
+  xil_printf("interrupt system set up complete!\n");
   /*
    * Enable all interrupts in CAN device.
    */
   XCanPs_IntrEnable(CanInstPtr, XCANPS_IXR_ALL);
 
-  /*
+/*
    * Enter Normal Mode.
    */
-  XCanPs_EnterMode(CanInstPtr, XCANPS_MODE_NORMAL);
-  //  XCanPs_EnterMode(CanInstPtr, XCANPS_MODE_LOOPBACK);
-  while (XCanPs_GetMode(CanInstPtr) != XCANPS_MODE_NORMAL)
+#if CAN_TEST
+  // loopback mode for test
+  XCanPs_EnterMode(CanInstPtr, XCANPS_MODE_LOOPBACK);
+  while (XCanPs_GetMode(CanInstPtr) != XCANPS_MODE_LOOPBACK)
     ;
+
+#else
+  XCanPs_EnterMode(CanInstPtr, XCANPS_MODE_NORMAL);
+  while (XCanPs_GetMode(CanInstPtr) != XCANPS_MODE_NORMAL)
+#endif
 
   //   /*
   //    * Loop back a frame. The RecvHandler is expected to handle
@@ -257,7 +275,8 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
  *function may enter an infinite loop and will never return to the caller.
  *
  ******************************************************************************/
-static void Config(XCanPs *InstancePtr) {
+static void Config(XCanPs *InstancePtr)
+{
   /*
    * Enter Configuration Mode if the device is not currently in
    * Configuration Mode.
@@ -287,7 +306,8 @@ static void Config(XCanPs *InstancePtr) {
  * @note		None.
  *
  ******************************************************************************/
-int SendFrame(const struct can_frame *tx_frame) {
+int SendFrame(const struct can_frame *tx_frame)
+{
   u8 *FramePtr;
   int Index;
   int Status;
@@ -304,7 +324,8 @@ int SendFrame(const struct can_frame *tx_frame) {
    * on receive.
    */
   FramePtr = (u8 *)(&TxFrame[2]);
-  for (Index = 0; Index < tx_frame->can_dlc; Index++) {
+  for (Index = 0; Index < tx_frame->can_dlc; Index++)
+  {
     *FramePtr++ = tx_frame->data[Index];
   }
 
@@ -343,8 +364,9 @@ int SendFrame(const struct can_frame *tx_frame) {
  *context.
  *
  ******************************************************************************/
-static void SendHandler(void *CallBackRef) {
-  xSemaphoreGive( xCANMutex );
+static void SendHandler(void *CallBackRef)
+{
+  // xSemaphoreGive(xCANMutex);
 
   // xil_printf("send ISR!\r\n");
   /*
@@ -370,7 +392,8 @@ static void SendHandler(void *CallBackRef) {
  *context.
  *
  ******************************************************************************/
-static void RecvHandler(void *CallBackRef) {
+static void RecvHandler(void *CallBackRef)
+{
   XCanPs *CanPtr = (XCanPs *)CallBackRef;
   int Status;
   int Index;
@@ -388,10 +411,15 @@ static void RecvHandler(void *CallBackRef) {
 
   xHigherPriorityTaskWoken = pdFALSE;
 
+  
+
   Status = XCanPs_Recv(CanPtr, RxFrame);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     xil_printf("receive error!\r\n");
-  } else {
+  }
+  else
+  {
     xil_printf("receive ISR!\r\n");
   }
 
@@ -401,13 +429,15 @@ static void RecvHandler(void *CallBackRef) {
   recv_frame->can_dlc = (u32)((RxFrame[1] & ~XCANPS_DLCR_TIMESTAMP_MASK) >> 28);
 
   FramePtr = (u8 *)(&RxFrame[2]);
-  for (Index = 0; Index < recv_frame->can_dlc; Index++) {
+  for (Index = 0; Index < recv_frame->can_dlc; Index++)
+  {
     recv_frame->data[Index] = *FramePtr++;
   }
 
   xil_printf("Receive can id:%x\r\n", recv_frame->can_id);
   xil_printf("Receive can dlc:%x\r\n", recv_frame->can_dlc);
-  for (int i = 0; i < recv_frame->can_dlc; i++) {
+  for (int i = 0; i < recv_frame->can_dlc; i++)
+  {
     xil_printf("can data[%d]:%x\r\n", i, recv_frame->data[i]);
   }
 
@@ -460,32 +490,41 @@ static void RecvHandler(void *CallBackRef) {
  *context.
  *
  ******************************************************************************/
-static void ErrorHandler(void *CallBackRef, u32 ErrorMask) {
-  if (ErrorMask & XCANPS_ESR_ACKER_MASK) {
+static void ErrorHandler(void *CallBackRef, u32 ErrorMask)
+{
+
+  
+
+  if (ErrorMask & XCANPS_ESR_ACKER_MASK)
+  {
     /*
      * ACK Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_BERR_MASK) {
+  if (ErrorMask & XCANPS_ESR_BERR_MASK)
+  {
     /*
      * Bit Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_STER_MASK) {
+  if (ErrorMask & XCANPS_ESR_STER_MASK)
+  {
     /*
      * Stuff Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_FMER_MASK) {
+  if (ErrorMask & XCANPS_ESR_FMER_MASK)
+  {
     /*
      * Form Error handling code should be put here.
      */
   }
 
-  if (ErrorMask & XCANPS_ESR_CRCER_MASK) {
+  if (ErrorMask & XCANPS_ESR_CRCER_MASK)
+  {
     /*
      * CRC Error handling code should be put here.
      */
@@ -497,6 +536,8 @@ static void ErrorHandler(void *CallBackRef, u32 ErrorMask) {
   LoopbackError = TRUE;
   RecvDone = TRUE;
   SendDone = TRUE;
+
+  
 }
 
 /*****************************************************************************/
@@ -527,10 +568,12 @@ static void ErrorHandler(void *CallBackRef, u32 ErrorMask) {
  *context. This function should be changed to meet specific application needs.
  *
  ******************************************************************************/
-static void EventHandler(void *CallBackRef, u32 IntrMask) {
+static void EventHandler(void *CallBackRef, u32 IntrMask)
+{
   XCanPs *CanPtr = (XCanPs *)CallBackRef;
-
-  if (IntrMask & XCANPS_IXR_BSOFF_MASK) {
+  
+  if (IntrMask & XCANPS_IXR_BSOFF_MASK)
+  {
     /*
      * Entering Bus off status interrupt requires
      * the CAN device be reset and reconfigured.
@@ -540,51 +583,60 @@ static void EventHandler(void *CallBackRef, u32 IntrMask) {
     return;
   }
 
-  if (IntrMask & XCANPS_IXR_RXOFLW_MASK) {
+  if (IntrMask & XCANPS_IXR_RXOFLW_MASK)
+  {
     /*
      * Code to handle RX FIFO Overflow Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_RXUFLW_MASK) {
+  if (IntrMask & XCANPS_IXR_RXUFLW_MASK)
+  {
     /*
      * Code to handle RX FIFO Underflow Interrupt
      * should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_TXBFLL_MASK) {
+  if (IntrMask & XCANPS_IXR_TXBFLL_MASK)
+  {
     /*
      * Code to handle TX High Priority Buffer Full
      * Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_TXFLL_MASK) {
+  if (IntrMask & XCANPS_IXR_TXFLL_MASK)
+  {
     /*
      * Code to handle TX FIFO Full Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_WKUP_MASK) {
+  if (IntrMask & XCANPS_IXR_WKUP_MASK)
+  {
     /*
      * Code to handle Wake up from sleep mode Interrupt
      * should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_SLP_MASK) {
+  if (IntrMask & XCANPS_IXR_SLP_MASK)
+  {
     /*
      * Code to handle Enter sleep mode Interrupt should be put here.
      */
   }
 
-  if (IntrMask & XCANPS_IXR_ARBLST_MASK) {
+  if (IntrMask & XCANPS_IXR_ARBLST_MASK)
+  {
     /*
      * Code to handle Lost bus arbitration Interrupt
      * should be put here.
      */
   }
+
+  
 }
 
 /*****************************************************************************/
@@ -609,13 +661,15 @@ static void EventHandler(void *CallBackRef, u32 IntrMask) {
  *
  ****************************************************************************/
 static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
-                                u16 CanIntrId) {
-  int Status;
+                                u16 CanIntrId)
+{
+  int Status = 0;
 #ifdef XPAR_INTC_0_DEVICE_ID
 #ifndef TESTAPP_GEN
   /* Initialize the interrupt controller and connect the ISRs */
   Status = XIntc_Initialize(IntcInstancePtr, INTC_DEVICE_ID);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     xil_printf("Failed init intc\r\n");
     return XST_FAILURE;
   }
@@ -625,7 +679,8 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
    */
   Status = XIntc_Connect(IntcInstancePtr, CanIntrId,
                          (XInterruptHandler)XCanPs_IntrHandler, CanInstancePtr);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     xil_printf("Failed connect intc\r\n");
     return XST_FAILURE;
   }
@@ -635,7 +690,8 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
    * all devices that cause interrupts.
    */
   Status = XIntc_Start(IntcInstancePtr, XIN_REAL_MODE);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return XST_FAILURE;
   }
 #endif
@@ -652,32 +708,32 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
 #endif
 #else
 #ifndef TESTAPP_GEN
-  XScuGic_Config *IntcConfig; /* Instance of the interrupt controller */
+  // XScuGic_Config *IntcConfig; /* Instance of the interrupt controller */
 
-  Xil_ExceptionInit();
+//  Xil_ExceptionInit();
 
-  /*
-   * Initialize the interrupt controller driver so that it is ready to
-   * use.
-   */
-  IntcConfig = XScuGic_LookupConfig(INTC_DEVICE_ID);
-  if (NULL == IntcConfig) {
-    return XST_FAILURE;
-  }
+  // /*
+  //  * Initialize the interrupt controller driver so that it is ready to
+  //  * use.
+  //  */
+  // IntcConfig = XScuGic_LookupConfig(INTC_DEVICE_ID);
+  // if (NULL == IntcConfig) {
+  //   return XST_FAILURE;
+  // }
 
-  Status = XScuGic_CfgInitialize(IntcInstancePtr, IntcConfig,
-                                 IntcConfig->CpuBaseAddress);
-  if (Status != XST_SUCCESS) {
-    return XST_FAILURE;
-  }
+  // Status = XScuGic_CfgInitialize(IntcInstancePtr, IntcConfig,
+  //                                IntcConfig->CpuBaseAddress);
+  // if (Status != XST_SUCCESS) {
+  //   return XST_FAILURE;
+  // }
 
-  /*
-   * Connect the interrupt controller interrupt handler to the hardware
-   * interrupt handling logic in the processor.
-   */
-  Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_IRQ_INT,
-                               (Xil_ExceptionHandler)XScuGic_InterruptHandler,
-                               IntcInstancePtr);
+  // /*
+  //  * Connect the interrupt controller interrupt handler to the hardware
+  //  * interrupt handling logic in the processor.
+  //  */
+  // Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_IRQ_INT,
+  //                              (Xil_ExceptionHandler)XScuGic_InterruptHandler,
+  //                              IntcInstancePtr);
 #endif
 
   /*
@@ -688,9 +744,13 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
   Status = XScuGic_Connect(IntcInstancePtr, CanIntrId,
                            (Xil_InterruptHandler)XCanPs_IntrHandler,
                            (void *)CanInstancePtr);
-  if (Status != XST_SUCCESS) {
+  if (Status != XST_SUCCESS)
+  {
     return Status;
   }
+
+  // enable Nested Interrupts
+//  XScuGic_CPUWriteReg(IntcInstancePtr, XSCGIC_BIN_PT_OFFSET, 0x03);
 
   /*
    * Enable the interrupt for the CAN device.

@@ -31,14 +31,14 @@ struct nmt nmt = {
 
 
 // nmt init
-int NMTInit(void)
+ int NMTInit(void)
 {
 	return ps_can0.init();
 }
 
 
 // nmt start all nodes
-void NMTstart(void)
+ void NMTstart(void)
 {
 	delay_ms(DelayEpos);
 	struct can_frame nmt_frame;
@@ -59,7 +59,7 @@ void NMTstart(void)
 
 
 // nmt start one node
-void NMTstartID(u8 slave_id)
+ void NMTstartID(u8 slave_id)
 {
 	delay_ms(DelayEpos);
 	struct can_frame nmt_frame;
@@ -84,7 +84,7 @@ void NMTstartID(u8 slave_id)
 }
 
 
-void NMTPreOperation(u8 slave_id)
+ void NMTPreOperation(u8 slave_id)
 {
 	delay_ms(DelayEpos);
 	struct can_frame nmt_frame;
@@ -104,7 +104,7 @@ void NMTPreOperation(u8 slave_id)
 }
 
 
-void NMTstop(u8 slave_id)
+ void NMTstop(u8 slave_id)
 {
 	struct can_frame nmt_frame;
 
@@ -129,7 +129,7 @@ void NMTstop(u8 slave_id)
 
 
 // cmd sync
-void NMTCmdSync()
+ void NMTCmdSync()
 {
 	struct can_frame nmt_frame;
 
@@ -142,7 +142,7 @@ void NMTCmdSync()
 
 
 // txpdo1
-int NMTTxPdo1(u8 slave_id, u16 ctrl_wrd)
+ int NMTTxPdo1(u8 slave_id, u16 ctrl_wrd)
 {
 	struct can_frame tx_pdo1_frame;
 
@@ -157,7 +157,7 @@ int NMTTxPdo1(u8 slave_id, u16 ctrl_wrd)
 
 
 // txpdo2
-int NMTTxPdo2(u8 slave_id, u16 ctrl_wrd, s32 pos_sv, u16 mode_of_operation)
+ int NMTTxPdo2(u8 slave_id, u16 ctrl_wrd, s32 pos_sv, u16 mode_of_operation)
 {
 	struct can_frame tx_pdo2_frame;
 
@@ -179,7 +179,7 @@ int NMTTxPdo2(u8 slave_id, u16 ctrl_wrd, s32 pos_sv, u16 mode_of_operation)
 
 
 // txpdo3
-int NMTTxPdo3(u8 slave_id, s16 target_torque, u16 mode_of_operation)
+ int NMTTxPdo3(u8 slave_id, s16 target_torque, u16 mode_of_operation)
 {
 	struct can_frame tx_pdo3_frame;
 
@@ -196,7 +196,7 @@ int NMTTxPdo3(u8 slave_id, s16 target_torque, u16 mode_of_operation)
 
 
 // txpdo4
-int NMTTxPdo4(u8 slave_id, s32 speed_set, u16 mode_of_operation)
+ int NMTTxPdo4(u8 slave_id, s32 speed_set, u16 mode_of_operation)
 {
 	struct can_frame tx_pdo4_frame;
 
@@ -214,7 +214,7 @@ int NMTTxPdo4(u8 slave_id, s32 speed_set, u16 mode_of_operation)
 
 
 // rxpdo1
-int NMTRxPdo1(u8 id)
+ int NMTRxPdo1(u8 id)
 {
 	struct can_frame rx_pdo1_frame;
 	rx_pdo1_frame.can_id = PDO1tx + id;
@@ -224,7 +224,7 @@ int NMTRxPdo1(u8 id)
 }
 
 
-void MotorParaRead(struct can_frame * recv_frame)
+ void MotorParaRead(struct can_frame * recv_frame)
 {
 	u16 			cob_id = recv_frame->can_id & (~0x007F);
 	u16 			SlaveId = (recv_frame->can_id & 0x7F);

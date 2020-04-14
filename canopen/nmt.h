@@ -58,9 +58,8 @@ int NMTRxPdo1(u8 id);
 
 void MotorParaRead(struct can_frame *recv_frame);
 
-
-
-struct nmt {
+struct nmt
+{
   // can device
   struct can *can_device;
 

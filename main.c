@@ -26,11 +26,13 @@ extern struct nmt nmt;
 /* task handles */
 static TaskHandle_t comm_task;
 static TaskHandle_t fan_task;
+static TaskHandle_t SystemInitTaskHandle;
 static TaskHandle_t CANUnpackTaskHandle;
 
 // task priority
+#define INIT_TASK_PRIORITY 4
 #define FAN_TASK_PRIORITY 3
-#define CAN_TASK_PRIORITY 2
+#define CAN_TASK_PRIORITY 6
 #define OPENAMP_TASK_PRIORITY 1
 
 /* global variables */
@@ -51,11 +53,11 @@ static void FanTask(void *pvParameters)
 		ps_core_temp = GetPsCoreTemp();
 		pl_core_temp = GetPlCoreTemp();
 
-		ccr4.state[0]= ps_core_temp;
+		ccr4.state[0] = ps_core_temp;
 		ccr4.state[1] = pl_core_temp;
 
-		xil_printf("\r\nps core temp:%d\n",ccr4.state[0]);
-		xil_printf("\rpl core temp:%d\n",ccr4.state[1]);
+		xil_printf("\r\nps core temp:%d\n", ccr4.state[0]);
+		xil_printf("\rpl core temp:%d\n", ccr4.state[1]);
 
 		// turn on the fan if the temperature > 40
 		if (ps_core_temp >= 40 || pl_core_temp >= 40)
@@ -70,6 +72,22 @@ static void FanTask(void *pvParameters)
 		// delay 5s
 		delay_ms(5000);
 	}
+}
+
+/* System Init task */
+static void SystemInitTask(void *pvParameters)
+{
+	// init fan
+	FanInit();
+
+	// init system monitor
+	SysMonInit();
+
+	// init robot
+	ccr4.Init();
+
+	/* Terminate this task */
+	vTaskDelete(SystemInitTaskHandle);
 }
 
 /*CAN unpack task*/
@@ -140,10 +158,6 @@ int main(void)
 {
 	BaseType_t stat;
 
-	FanInit();
-	SysMonInit();
-	// ccr4.Init();
-
 	/* Before a semaphore is used it must be explicitly created.
     In this example a
    mutex type semaphore is created. */
@@ -153,19 +167,22 @@ int main(void)
     *The address of the data is transfered between the isr and queue*/
 	xCANQueue = xQueueCreate(1, sizeof(struct can_frame));
 
+	/* Create the system init task */
+	stat = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
+
 	/* Create the openamp task */
-	stat = xTaskCreate(processing, (const char *)"HW2", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
+	stat = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
 
 	/* Create the fan task */
 	stat = xTaskCreate(FanTask, (const char *)"Fan", configMINIMAL_STACK_SIZE, NULL, FAN_TASK_PRIORITY, &fan_task);
 
-	// /* Create the CAN frame unpack task */
-	// xTaskCreate(CANUnpackTask,			   /* The function that implements the task. */
-	// 			(const char *)"CANUnpack", /* Text name for the task, provided to assist debugging only. */
-	// 			1024,					   /* The stack allocated to the task.*/
-	// 			NULL,					   /* The task parameter is not used, so set to NULL. */
-	// 			CAN_TASK_PRIORITY,		   /* The task  priority. */
-	// 			&CANUnpackTaskHandle);
+	/* Create the CAN frame unpack task */
+	xTaskCreate(CANUnpackTask,			   /* The function that implements the task. */
+				(const char *)"CANUnpack", /* Text name for the task, provided to assist debugging only. */
+				1024,					   /* The stack allocated to the task.*/
+				NULL,					   /* The task parameter is not used, so set to NULL. */
+				CAN_TASK_PRIORITY,		   /* The task  priority. */
+				&CANUnpackTaskHandle);
 
 	if (stat != pdPASS)
 	{

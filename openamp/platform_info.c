@@ -27,6 +27,7 @@
 #include <openamp/platform_info.h>
 #include <openamp/rpmsg_virtio.h>
 #include <openamp/rsc_table.h>
+#include "delay/delay.h"
 
 #define IPI_DEV_NAME         "ipi_dev"
 #define IPI_BUS_NAME         "generic"
@@ -244,6 +245,7 @@ int platform_poll(void *priv)
 			break;
 		}
 		_rproc_wait();
+		// delay_ms(10);
 		metal_irq_restore_enable(flags);
 	}
 	return 0;

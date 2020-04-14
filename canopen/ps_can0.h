@@ -51,6 +51,8 @@ extern "C" {
  */
 #define TEST_MESSAGE_ID 2000
 
+#define CAN_TEST 1
+
 /*
  * The Baud Rate Prescaler Register (BRPR) and Bit Timing Register (BTR)
  * are setup such that CAN baud rate equals 40Kbps, assuming that the
@@ -76,6 +78,10 @@ extern "C" {
  * is 24 MHz.
  */
 #define TEST_BRPR_BAUD_PRESCALAR 29
+
+// freqBIT_RATE = freqCAN_REF_CLK / ((can.BRPR[BRP] + 1) * (3 + can.BTR[TS1] + can.BTR[TS2]))
+// 40Kbps=24M/(29+1)/(3+15+2)
+// 1Mbps =24M/(3+1)/(3+1+2)
 
 struct can_frame {
   u32 can_id;  /* 32 bit CAN_ID */
