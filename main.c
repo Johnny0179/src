@@ -41,7 +41,7 @@ static TaskHandle_t system_monitor_task;
 // task priority
 #define INIT_TASK_PRIORITY 8
 #define FAN_TASK_PRIORITY 6
-#define CAN_TASK_PRIORITY 3
+
 #define OPENAMP_TASK_PRIORITY 3
 
 /* global variables */
@@ -62,9 +62,8 @@ static void FanTask(void *pvParameters)
 	nmt.Start();
 	delay_ms(1000);
 
-
 	pulley1.Enable(&nmt, &pulley1);
-	// delay_ms(1);
+
 	pulley1.Disable(&nmt, &pulley1);
 
 	nmt.Stop(0);
@@ -209,13 +208,6 @@ int main(void)
 	/* Create the fan task */
 	stat = xTaskCreate(FanTask, (const char *)"Fan", configMINIMAL_STACK_SIZE, NULL, FAN_TASK_PRIORITY, &fan_task);
 
-	// /* Create the CAN frame unpack task */
-	// xTaskCreate(CANUnpackTask,			   /* The function that implements the task. */
-	// 			(const char *)"CANUnpack", /* Text name for the task, provided to assist debugging only. */
-	// 			1024,					   /* The stack allocated to the task.*/
-	// 			NULL,					   /* The task parameter is not used, so set to NULL. */
-	// 			CAN_TASK_PRIORITY,		   /* The task  priority. */
-	// 			&CANUnpackTaskHandle);
 
 	if (stat != pdPASS)
 	{
