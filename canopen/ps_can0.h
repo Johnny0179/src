@@ -2,10 +2,11 @@
 #define PS_CAN0_H
 
 #if defined __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-/***************************** Include Files *********************************/
+  /***************************** Include Files *********************************/
 
 #include "xcanps.h"
 #include "xil_exception.h"
@@ -51,7 +52,8 @@ extern "C" {
  */
 #define TEST_MESSAGE_ID 2000
 
-#define CAN_TEST 1
+// CAN LOOPBACK SWITCH
+#define CAN_TEST 0
 
 /*
  * The Baud Rate Prescaler Register (BRPR) and Bit Timing Register (BTR)
@@ -61,48 +63,45 @@ extern "C" {
  * see the CAN 2.0A, CAN 2.0B, ISO 11898-1 specifications.
  */
 
-/*
- * Timing parameters to be set in the Bit Timing Register (BTR).
- * These values are for a 40 Kbps baudrate assuming the CAN input clock
- * frequency is 24 MHz.
- */
-#define TEST_BTR_SYNCJUMPWIDTH 3
-#define TEST_BTR_SECOND_TIMESEGMENT 2
-#define TEST_BTR_FIRST_TIMESEGMENT 15
+
 
 /*
  * The Baud rate Prescalar value in the Baud Rate Prescaler Register
  * needs to be set based on the input clock  frequency to the CAN core and
  * the desired CAN baud rate.
- * This value is for a 40 Kbps baudrate assuming the CAN input clock frequency
- * is 24 MHz.
+ * the CAN input clock frequency is 100 MHz.
  */
-#define TEST_BRPR_BAUD_PRESCALAR 29
 
-// freqBIT_RATE = freqCAN_REF_CLK / ((can.BRPR[BRP] + 1) * (3 + can.BTR[TS1] + can.BTR[TS2]))
-// 40Kbps=24M/(29+1)/(3+15+2)
-// 1Mbps =24M/(3+1)/(3+1+2)
+#define TEST_BTR_SYNCJUMPWIDTH 3
+#define TEST_BTR_SECOND_TIMESEGMENT 2
+#define TEST_BTR_FIRST_TIMESEGMENT 5
+#define TEST_BRPR_BAUD_PRESCALAR 19
 
-struct can_frame {
-  u32 can_id;  /* 32 bit CAN_ID */
-  u32 can_dlc; /* frame payload length in byte (0 .. CAN_MAX_DLEN) */
-  u8 data[CAN_MAX_DLEN];
-};
+  // freqBIT_RATE = freqCAN_REF_CLK / ((can.BRPR[BRP] + 1) * (3 + can.BTR[TS1] + can.BTR[TS2]))
+  // 1Mbps =100M/(9+1)/(3+1+2)
+  // 500Kbps =100M/(19+1)/(3+5+2)
 
-/************************** Function Prototypes ******************************/
-int PsCan0Init(void);
-int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
-                  u16 CanIntrId);
+  struct can_frame
+  {
+    u32 can_id;  /* 32 bit CAN_ID */
+    u32 can_dlc; /* frame payload length in byte (0 .. CAN_MAX_DLEN) */
+    u8 data[CAN_MAX_DLEN];
+  };
 
-int SendFrame(const struct can_frame *tx_frame);
+  /************************** Function Prototypes ******************************/
+  int PsCan0Init(void);
+  int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
+                    u16 CanIntrId);
 
-// void SendHandler(void *CallBackRef);
-// void RecvHandler(void *CallBackRef);
-// void ErrorHandler(void *CallBackRef, u32 ErrorMask);
-// void EventHandler(void *CallBackRef, u32 Mask);
+  int SendFrame(const struct can_frame *tx_frame);
 
-// int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
-//                          u16 CanIntrId);
+  // void SendHandler(void *CallBackRef);
+  // void RecvHandler(void *CallBackRef);
+  // void ErrorHandler(void *CallBackRef, u32 ErrorMask);
+  // void EventHandler(void *CallBackRef, u32 Mask);
+
+  // int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
+  //                          u16 CanIntrId);
 
 #if defined __cplusplus
 }

@@ -12,7 +12,7 @@ This application echoes back data that was sent to it by the master core. */
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "robot/robot.h"
+#include "controller/controller.h"
 static struct rpmsg_endpoint lept;
 static int shutdown_req = 0;
 

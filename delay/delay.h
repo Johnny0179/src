@@ -15,6 +15,6 @@
 
 // delay n ms, this function can only be used in the task!
 void delay_ms(u32 ms);
-//void delay_us(u32 us);
+void delay_us(u32 us);
 
 #endif

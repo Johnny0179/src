@@ -245,7 +245,7 @@ int platform_poll(void *priv)
 			break;
 		}
 		_rproc_wait();
-		// delay_ms(10);
+		// vTaskDelay(10);
 		metal_irq_restore_enable(flags);
 	}
 	return 0;

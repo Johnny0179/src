@@ -1,5 +1,5 @@
-#ifndef ROBOT_H
-#define ROBOT_H
+#ifndef _CONTROLLER_H_
+#define _CONTROLLER_H_
 
 #include "maxon/maxon.h"
 
@@ -45,14 +45,23 @@ struct robot_state
   u16 pl_core_temp;
 };
 
-
-
 // robot struct
 struct robot
 {
   u16 cmd[124];
   u16 state[124];
   int (*Init)(void);
+};
+
+// controller struct
+struct controller
+{
+
+  // controller reference command
+  u16 ref;
+
+  // maxon motor
+  struct maxon maxon;
 };
 
 #endif

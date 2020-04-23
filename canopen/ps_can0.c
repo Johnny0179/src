@@ -62,7 +62,8 @@
 #include "task.h"
 
 #include "canopen/nmt.h"
-#include "robot/robot.h"
+#include "controller/controller.h"
+#include "delay/delay.h"
 /**************************** Type Definitions *******************************/
 
 /***************** Macros (Inline Functions) Definitions *********************/
@@ -74,10 +75,10 @@ XCanPs CanInstance; /* Instance of the Can driver */
 INTC IntcInstance;  /* Instance of the Interrupt Controller driver */
 
 extern XScuGic xInterruptController;
-
+extern struct nmt nmt;
 #endif
 
-u32 RxFrame[XCANPS_MAX_FRAME_SIZE_IN_WORDS];
+
 
 /* queue */
 extern QueueHandle_t xCANQueue;
@@ -208,7 +209,6 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
   RecvDone = FALSE;
   LoopbackError = FALSE;
 
-  xil_printf("set up interrupt system!\n");
   /*
    * Connect to the interrupt controller.
    */
@@ -219,7 +219,6 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
     return XST_FAILURE;
   }
 
-  xil_printf("interrupt system set up complete!\n");
   /*
    * Enable all interrupts in CAN device.
    */
@@ -335,7 +334,9 @@ int SendFrame(const struct can_frame *tx_frame)
    * Now wait until the TX FIFO is not full and send the frame.
    */
   while (XCanPs_IsTxFifoFull(&CanInstance) == TRUE)
-    ;
+  {
+    xil_printf("\rTXFIFO full!\n");
+  }
 
   Status = XCanPs_Send(&CanInstance, TxFrame);
   // if (Status != XST_SUCCESS) {
@@ -366,14 +367,28 @@ int SendFrame(const struct can_frame *tx_frame)
  ******************************************************************************/
 static void SendHandler(void *CallBackRef)
 {
-  // xSemaphoreGive(xCANMutex);
+  // xil_printf("\r can send isr!\n");
+  // BaseType_t xHigherPriorityTaskWoken;
 
-  // xil_printf("send ISR!\r\n");
-  /*
-   * The frame was sent successfully. Notify the task context.
-   */
+  // /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
+  //   *it will get set to pdTRUE inside the interrupt safe API function if a
+  //   *context switch is required.
+  //   */
+  // xHigherPriorityTaskWoken = pdFALSE;
 
-  // SendDone = TRUE;
+  // /* 'Give' the semaphore to unblock the task, passing in the address of
+  //  *xHigherPriorityTaskWoken as the interrupt safe API function's
+  //  *pxHigherPriorityTaskWoken parameter. */
+  // xSemaphoreGiveFromISR(xCANMutex, &xHigherPriorityTaskWoken);
+
+  // /* Pass the xHigherPriorityTaskWoken value into portYIELD_FROM_ISR(). If
+  //  *xHigherPriorityTaskWoken was set to pdTRUE inside xSemaphoreGiveFromISR()
+  //  *then calling portYIELD_FROM_ISR() will request a context switch. If
+  //  *xHigherPriorityTaskWoken is still pdFALSE then calling
+  //  *portYIELD_FROM_ISR() will have no effect. Unlike most FreeRTOS ports, the
+  //  *Windows port requires the ISR to return a value - the return statement
+  //  *is inside the Windows version of portYIELD_FROM_ISR(). */
+  // portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 /*****************************************************************************/
@@ -399,6 +414,8 @@ static void RecvHandler(void *CallBackRef)
   int Index;
   u8 *FramePtr;
   struct can_frame *recv_frame;
+  u32 RxFrame[XCANPS_MAX_FRAME_SIZE_IN_WORDS];
+
   BaseType_t xHigherPriorityTaskWoken;
 
   /* As always, xHigherPriorityTaskWoken is initialized to pdFALSE to be able to
@@ -411,8 +428,6 @@ static void RecvHandler(void *CallBackRef)
 
   xHigherPriorityTaskWoken = pdFALSE;
 
-  
-
   Status = XCanPs_Recv(CanPtr, RxFrame);
   if (Status != XST_SUCCESS)
   {
@@ -420,11 +435,12 @@ static void RecvHandler(void *CallBackRef)
   }
   else
   {
-    xil_printf("receive ISR!\r\n");
+    xil_printf("\rreceive ISR!\r\n");
   }
 
   // get the can id
-  recv_frame->can_id = (u32)RxFrame[0];
+  recv_frame->can_id = (u32)(((RxFrame[0]>>9)>>8)>>4);
+
   // get the can dlc
   recv_frame->can_dlc = (u32)((RxFrame[1] & ~XCANPS_DLCR_TIMESTAMP_MASK) >> 28);
 
@@ -434,14 +450,21 @@ static void RecvHandler(void *CallBackRef)
     recv_frame->data[Index] = *FramePtr++;
   }
 
-  xil_printf("Receive can id:%x\r\n", recv_frame->can_id);
-  xil_printf("Receive can dlc:%x\r\n", recv_frame->can_dlc);
-  for (int i = 0; i < recv_frame->can_dlc; i++)
-  {
-    xil_printf("can data[%d]:%x\r\n", i, recv_frame->data[i]);
-  }
 
-  xQueueSendToBackFromISR(xCANQueue, recv_frame, &xHigherPriorityTaskWoken);
+  // xil_printf("Receive can id:%lx\r\n", recv_frame->can_id);
+  // xil_printf("Receive can dlc:%lx\r\n", recv_frame->can_dlc);
+  // for (int i = 0; i < recv_frame->can_dlc; i++)
+  // {
+  //   xil_printf("can data[%d]:%lx\r\n", i, recv_frame->data[i]);
+  // }
+
+// read motor parameters
+  nmt.ParaRead(recv_frame);
+	
+
+  // send to can frame unpack task
+  // xQueueSendToBackFromISR(xCANQueue, recv_frame, &xHigherPriorityTaskWoken);
+
   /*
    * Verify Identifier and Data Length Code.
    */
@@ -493,8 +516,6 @@ static void RecvHandler(void *CallBackRef)
 static void ErrorHandler(void *CallBackRef, u32 ErrorMask)
 {
 
-  
-
   if (ErrorMask & XCANPS_ESR_ACKER_MASK)
   {
     /*
@@ -536,8 +557,6 @@ static void ErrorHandler(void *CallBackRef, u32 ErrorMask)
   LoopbackError = TRUE;
   RecvDone = TRUE;
   SendDone = TRUE;
-
-  
 }
 
 /*****************************************************************************/
@@ -571,7 +590,7 @@ static void ErrorHandler(void *CallBackRef, u32 ErrorMask)
 static void EventHandler(void *CallBackRef, u32 IntrMask)
 {
   XCanPs *CanPtr = (XCanPs *)CallBackRef;
-  
+
   if (IntrMask & XCANPS_IXR_BSOFF_MASK)
   {
     /*
@@ -611,6 +630,7 @@ static void EventHandler(void *CallBackRef, u32 IntrMask)
     /*
      * Code to handle TX FIFO Full Interrupt should be put here.
      */
+    // xil_printf("\rTXFIFO full!\n");
   }
 
   if (IntrMask & XCANPS_IXR_WKUP_MASK)
@@ -635,8 +655,6 @@ static void EventHandler(void *CallBackRef, u32 IntrMask)
      * should be put here.
      */
   }
-
-  
 }
 
 /*****************************************************************************/
@@ -710,7 +728,7 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
 #ifndef TESTAPP_GEN
   // XScuGic_Config *IntcConfig; /* Instance of the interrupt controller */
 
-//  Xil_ExceptionInit();
+  //  Xil_ExceptionInit();
 
   // /*
   //  * Initialize the interrupt controller driver so that it is ready to
@@ -750,7 +768,7 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
   }
 
   // enable Nested Interrupts
-//  XScuGic_CPUWriteReg(IntcInstancePtr, XSCGIC_BIN_PT_OFFSET, 0x03);
+  //  XScuGic_CPUWriteReg(IntcInstancePtr, XSCGIC_BIN_PT_OFFSET, 0x03);
 
   /*
    * Enable the interrupt for the CAN device.
