@@ -238,6 +238,7 @@ int platform_poll(void *priv)
 
 	prproc = rproc->priv;
 	while(1) {
+		xil_printf("openamp poll.\r\n");
 		flags = metal_irq_save_disable();
 		if (!(atomic_flag_test_and_set(&prproc->ipi_nokick))) {
 			metal_irq_restore_enable(flags);

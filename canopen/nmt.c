@@ -1,7 +1,7 @@
 
+#include <controller/maxon/maxon.h>
 #include "nmt.h"
 
-#include "maxon/maxon.h"
 #include "controller/controller.h"
 #include "common/common.h"
 #include <stdlib.h>
@@ -311,3 +311,5 @@ void MotorParaRead(struct can_frame *recv_frame)
 	// RPU_PRINTF("(motor_para->status_word_ >> 5 & 1):%x\n",(motor_para->status_word_ >> 5 & 1));
 	// RPU_PRINTF("(motor_para->status_word_):%x\n",(motor_para->status_word_));
 }
+
+

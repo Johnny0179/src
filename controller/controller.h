@@ -1,7 +1,7 @@
 #ifndef _CONTROLLER_H_
 #define _CONTROLLER_H_
 
-#include "maxon/maxon.h"
+#include "controller/maxon/maxon.h"
 
 /* rpmsg definition */
 // max rpmsg size is 496 bytes
@@ -61,7 +61,7 @@ struct controller
   u16 ref;
 
   // maxon motor
-  struct maxon maxon;
+//  struct maxon maxon;
 };
 
 #endif

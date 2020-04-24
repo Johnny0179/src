@@ -25,6 +25,10 @@ extern void cleanup_system(void);
 extern struct robot ccr4;
 extern struct nmt nmt;
 
+// the command send to RPU from APU
+extern r5_cmd R5_cmd;
+extern r5_state R5_state;
+
 extern struct maxon pulley1;
 
 /* task handles */
@@ -39,10 +43,9 @@ static TaskHandle_t system_monitor_task;
 //
 
 // task priority
-#define INIT_TASK_PRIORITY 8
-#define FAN_TASK_PRIORITY 6
-
-#define OPENAMP_TASK_PRIORITY 3
+#define INIT_TASK_PRIORITY 3
+#define FAN_TASK_PRIORITY 2
+#define OPENAMP_TASK_PRIORITY 1
 
 /* global variables */
 // mutex
@@ -55,36 +58,35 @@ QueueHandle_t xCANQueue = NULL;
 static void FanTask(void *pvParameters)
 {
 	// the temperature of ps and pl
-	u16 ps_core_temp, pl_core_temp;
-	s8 state;
-	nmt.Stop(0);
-	delay_ms(1000);
-	nmt.Start();
-	delay_ms(1000);
+	u8 ps_core_temp, pl_core_temp;
 
-	pulley1.Enable(&nmt, &pulley1);
+	// nmt.Stop(0);
+	// delay_ms(1000);s
+	// nmt.Start();
+	// delay_ms(1000);
 
-	pulley1.Disable(&nmt, &pulley1);
+	// pulley1.Enable(&nmt, &pulley1);
 
-	nmt.Stop(0);
-	delay_ms(1000);
+	// pulley1.Disable(&nmt, &pulley1);
+
+	// nmt.Stop(0);
+	// delay_ms(1000);
 
 	for (;;)
 	{
-		// nmt.TxPdo1(3, 0x0006);
-		// delay_ms(100);
-		// nmt.TxPdo1(3, 0x000F);
-		// delay_ms(100);
-
 		// get the temperature of the ps and pl core
-		ps_core_temp = GetPsCoreTemp();
-		pl_core_temp = GetPlCoreTemp();
+		ps_core_temp = (u8)GetPsCoreTemp();
+		pl_core_temp = (u8)GetPlCoreTemp();
 
 		ccr4.state[0] = ps_core_temp;
 		ccr4.state[1] = pl_core_temp;
 
-		xil_printf("\r\nps core temp:%d\n", ccr4.state[0]);
-		xil_printf("\rpl core temp:%d\n", ccr4.state[1]);
+		R5_state.ps_core_temp = ps_core_temp;
+		R5_state.pl_core_temp = pl_core_temp;
+
+		RPU_PRINTF("------------------------------\n");
+		RPU_PRINTF("ps core temp:%d\n", ps_core_temp);
+		RPU_PRINTF("pl core temp:%d\n", pl_core_temp);
 
 		// turn on the fan if the temperature > 40
 		if (ps_core_temp >= 40 || pl_core_temp >= 40)
@@ -105,6 +107,10 @@ static void FanTask(void *pvParameters)
 static void SystemInitTask(void *pvParameters)
 {
 	s8 state;
+
+	// set the core id
+	R5_state.r5_id = 0;
+
 	// init fan
 	FanInit();
 
@@ -207,7 +213,6 @@ int main(void)
 
 	/* Create the fan task */
 	stat = xTaskCreate(FanTask, (const char *)"Fan", configMINIMAL_STACK_SIZE, NULL, FAN_TASK_PRIORITY, &fan_task);
-
 
 	if (stat != pdPASS)
 	{

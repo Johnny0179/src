@@ -78,8 +78,6 @@ extern XScuGic xInterruptController;
 extern struct nmt nmt;
 #endif
 
-
-
 /* queue */
 extern QueueHandle_t xCANQueue;
 
@@ -218,6 +216,10 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
     xil_printf("interrupt system set up failed!\n");
     return XST_FAILURE;
   }
+  else
+  {
+    xil_printf("interrupt system set up success!\n");
+  }
 
   /*
    * Enable all interrupts in CAN device.
@@ -236,6 +238,7 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
 #else
   XCanPs_EnterMode(CanInstPtr, XCANPS_MODE_NORMAL);
   while (XCanPs_GetMode(CanInstPtr) != XCANPS_MODE_NORMAL)
+    ;
 #endif
 
   //   /*
@@ -439,7 +442,7 @@ static void RecvHandler(void *CallBackRef)
   }
 
   // get the can id
-  recv_frame->can_id = (u32)(((RxFrame[0]>>9)>>8)>>4);
+  recv_frame->can_id = (u32)(((RxFrame[0] >> 9) >> 8) >> 4);
 
   // get the can dlc
   recv_frame->can_dlc = (u32)((RxFrame[1] & ~XCANPS_DLCR_TIMESTAMP_MASK) >> 28);
@@ -450,7 +453,6 @@ static void RecvHandler(void *CallBackRef)
     recv_frame->data[Index] = *FramePtr++;
   }
 
-
   // xil_printf("Receive can id:%lx\r\n", recv_frame->can_id);
   // xil_printf("Receive can dlc:%lx\r\n", recv_frame->can_dlc);
   // for (int i = 0; i < recv_frame->can_dlc; i++)
@@ -458,9 +460,8 @@ static void RecvHandler(void *CallBackRef)
   //   xil_printf("can data[%d]:%lx\r\n", i, recv_frame->data[i]);
   // }
 
-// read motor parameters
+  // read motor parameters
   nmt.ParaRead(recv_frame);
-	
 
   // send to can frame unpack task
   // xQueueSendToBackFromISR(xCANQueue, recv_frame, &xHigherPriorityTaskWoken);
@@ -768,18 +769,18 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
   }
 
   // enable Nested Interrupts
-  //  XScuGic_CPUWriteReg(IntcInstancePtr, XSCGIC_BIN_PT_OFFSET, 0x03);
+  //    XScuGic_CPUWriteReg(IntcInstancePtr, XSCGIC_BIN_PT_OFFSET, 0x03);
 
   /*
    * Enable the interrupt for the CAN device.
    */
-  XScuGic_Enable(IntcInstancePtr, CanIntrId);
+  XScuGic_EnableIntr(IntcInstancePtr, CanIntrId);
 #endif
 #ifndef TESTAPP_GEN
   /*
    * Enable interrupts in the Processor.
    */
-  Xil_ExceptionEnable();
+//  Xil_ExceptionEnable();
 #endif
   return XST_SUCCESS;
 }

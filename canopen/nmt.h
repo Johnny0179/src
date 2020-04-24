@@ -1,8 +1,8 @@
 #ifndef NMT_H
 #define NMT_H
 
+#include <controller/maxon/maxon.h>
 #include "canopen/can.h"
-#include "maxon/maxon.h"
 #include "delay/delay.h"
 
 // NMT Command Specifier, sent by master to change a slave state, Should not be

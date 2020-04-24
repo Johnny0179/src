@@ -13,6 +13,9 @@ This application echoes back data that was sent to it by the master core. */
 #include "task.h"
 
 #include "controller/controller.h"
+#include "common/common.h"
+#include "sysmon/sysmon.h"
+
 static struct rpmsg_endpoint lept;
 static int shutdown_req = 0;
 
@@ -31,6 +34,9 @@ extern struct maxon pulley2;
 extern struct maxon down_claw1;
 extern struct maxon down_claw2;
 
+extern r5_cmd R5_cmd;
+extern r5_state R5_state;
+
 /*-----------------------------------------------------------------------------*
  *  RPMSG endpoint callbacks
  *-----------------------------------------------------------------------------*/
@@ -42,7 +48,7 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 	int state, i;
 
 	//	  u8 rpmsg_payload[MAX_RPMSG_SIZE];
-	u16 *ptr = malloc(MAX_RPMSG_SIZE * sizeof(u8));
+	u8 *ptr = malloc(MAX_RPMSG_SIZE * sizeof(u8));
 
 	/* On reception of a shutdown we signal the application to terminate */
 	if ((*(unsigned int *)data) == SHUTDOWN_MSG)
@@ -54,7 +60,7 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 
 	/* process the data */
 	//
-	ptr = (u16 *)data;
+	ptr = (u8 *)data;
 	//   (*ptr)++;
 
 	// check if is the last payload
@@ -63,62 +69,61 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 	{
 
 		u8 temp_buff[MAX_RPMSG_SIZE] = {0};
-		// write robot contrl cmd and read robot state ?
-	case ROBOT_RD_WR:
 
-		// write the cmd
-		for (i = 0; i < MAX_RPMSG_SIZE / 2 / 2; i++)
-		{
-			ccr4.cmd[i] = *ptr;
-			ptr++;
-		}
-
-		// read the state
-		for (i = 0; i < MAX_RPMSG_SIZE / 2 / 2; i++)
-		{
-			*ptr = ccr4.state[i];
-			ptr++;
-		}
-
-		// // copy the robot command
-		// memcpy(&ccr4.cmd, data, MAX_RPMSG_SIZE / 2);
-
-		// // read the state parameter
-		// // copy the robot state
-		// memcpy((&temp_buff + MAX_RPMSG_SIZE / 2), &ccr4.state, MAX_RPMSG_SIZE / 2);
-
-		state = rpmsg_send(ept, data, len);
-		break;
-
-	case UP_CLAW:
-		memcpy(temp_buff, &up_claw.parameter, MAX_RPMSG_SIZE);
+	case READ_R5_STATE_FROM_APU:
+		memcpy(temp_buff, &R5_state, sizeof(r5_state));
 		state = rpmsg_send(ept, temp_buff, len);
 		break;
 
-	case UP_WHEEL:
-		memcpy(temp_buff, &up_wheel.parameter, MAX_RPMSG_SIZE);
-		state = rpmsg_send(ept, temp_buff, len);
-		break;
+	// 	// write robot contrl cmd and read robot state ?
+	// case ROBOT_RD_WR:
 
-	case PULLEY1:
-		memcpy(temp_buff, &pulley1.parameter, MAX_RPMSG_SIZE);
-		state = rpmsg_send(ept, temp_buff, len);
-		break;
+	// 	// write the cmd
+	// 	for (i = 0; i < MAX_RPMSG_SIZE / 2 / 2; i++)
+	// 	{
+	// 		ccr4.cmd[i] = *ptr;
+	// 		ptr++;
+	// 	}
 
-	case PULLEY2:
-		memcpy(temp_buff, &pulley2.parameter, MAX_RPMSG_SIZE);
-		state = rpmsg_send(ept, temp_buff, len);
-		break;
+	// 	// read the state
+	// 	for (i = 0; i < MAX_RPMSG_SIZE / 2 / 2; i++)
+	// 	{
+	// 		*ptr = ccr4.state[i];
+	// 		ptr++;
+	// 	}
 
-	case DOWN_CLAW1:
-		memcpy(temp_buff, &down_claw1.parameter, MAX_RPMSG_SIZE);
-		state = rpmsg_send(ept, temp_buff, len);
-		break;
+	// 	state = rpmsg_send(ept, data, len);
+	// 	break;
 
-	case DOWN_CLAW2:
-		memcpy(temp_buff, &down_claw2.parameter, MAX_RPMSG_SIZE);
-		state = rpmsg_send(ept, temp_buff, len);
-		break;
+	// case UP_CLAW:
+	// 	memcpy(temp_buff, &up_claw.parameter, MAX_RPMSG_SIZE);
+	// 	state = rpmsg_send(ept, temp_buff, len);
+	// 	break;
+
+	// case UP_WHEEL:
+	// 	memcpy(temp_buff, &up_wheel.parameter, MAX_RPMSG_SIZE);
+	// 	state = rpmsg_send(ept, temp_buff, len);
+	// 	break;
+
+	// case PULLEY1:
+	// 	memcpy(temp_buff, &pulley1.parameter, MAX_RPMSG_SIZE);
+	// 	state = rpmsg_send(ept, temp_buff, len);
+	// 	break;
+
+	// case PULLEY2:
+	// 	memcpy(temp_buff, &pulley2.parameter, MAX_RPMSG_SIZE);
+	// 	state = rpmsg_send(ept, temp_buff, len);
+	// 	break;
+
+	// case DOWN_CLAW1:
+	// 	memcpy(temp_buff, &down_claw1.parameter, MAX_RPMSG_SIZE);
+	// 	state = rpmsg_send(ept, temp_buff, len);
+	// 	break;
+
+	// case DOWN_CLAW2:
+	// 	memcpy(temp_buff, &down_claw2.parameter, MAX_RPMSG_SIZE);
+	// 	state = rpmsg_send(ept, temp_buff, len);
+	// 	break;
 
 	default:
 		break;
