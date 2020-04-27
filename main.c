@@ -29,9 +29,8 @@ extern struct maxon pulley1;
 
 /* task handles */
 static TaskHandle_t comm_task;
-static TaskHandle_t fan_task;
+
 static TaskHandle_t SystemInitTaskHandle;
-static TaskHandle_t CANUnpackTaskHandle;
 
 // system monitor task handle
 static TaskHandle_t system_monitor_task;
@@ -39,8 +38,10 @@ static TaskHandle_t system_monitor_task;
 //
 
 // task priority
-#define INIT_TASK_PRIORITY 3
-#define FAN_TASK_PRIORITY 2
+#define INIT_TASK_PRIORITY 7
+
+#define SYSMON_TASK_PRIORITY 6
+
 #define OPENAMP_TASK_PRIORITY 1
 
 /* global variables */
@@ -50,49 +51,18 @@ SemaphoreHandle_t xCANMutex;
 // queue
 QueueHandle_t xCANQueue = NULL;
 
-/* Fan task */
-static void FanTask(void *pvParameters)
+static void SysMonTask(void *pvParameters)
 {
-	// the temperature of ps and pl
-	u8 ps_core_temp, pl_core_temp;
-
-	// nmt.Stop(0);
-	// delay_ms(1000);s
-	// nmt.Start();
-	// delay_ms(1000);
-
-	// pulley1.Enable(&nmt, &pulley1);
-
-	// pulley1.Disable(&nmt, &pulley1);
-
-	// nmt.Stop(0);
-	// delay_ms(1000);
+//	init sysmon data type
+	sysmon sysmon = {
+		.fan_refresh_cnt = 0
+		};
 
 	for (;;)
 	{
-		// get the temperature of the ps and pl core
-		ps_core_temp = (u8)GetPsCoreTemp();
-		pl_core_temp = (u8)GetPlCoreTemp();
-
-		R5_state.ps_core_temp = ps_core_temp;
-		R5_state.pl_core_temp = pl_core_temp;
-
-//		 RPU_PRINTF("------------------------------\n");
-//		 RPU_PRINTF("ps core temp:%d\n", R5_state.ps_core_temp);
-//		 RPU_PRINTF("pl core temp:%d\n", R5_state.pl_core_temp);
-
-		// turn on the fan if the temperature > 40
-		if (ps_core_temp >= 40 || pl_core_temp >= 40)
-		{
-			FanOn();
-		}
-		else
-		{
-			FanOff();
-		}
-
-		// delay 5s, 1000 000 ticks per second
-		vTaskDelay(5000000);
+		SysMonPoll(&sysmon);
+		// 10ms
+		vTaskDelay(10000);
 	}
 }
 
@@ -190,7 +160,7 @@ static void processing(void *unused_arg)
  *-----------------------------------------------------------------------------*/
 int main(void)
 {
-	BaseType_t stat;
+	BaseType_t state;
 
 	/* Before a semaphore is used it must be explicitly created.In this example amutex type semaphore is created. */
 	xCANMutex = xSemaphoreCreateMutex();
@@ -199,15 +169,15 @@ int main(void)
 	xCANQueue = xQueueCreate(10, sizeof(struct can_frame));
 
 	/* Create the system init task */
-	stat = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
+	state = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
+
+	/* Create the system monitor task */
+	state = xTaskCreate(SysMonTask, (const char *)"System Monitor", 1024, NULL, SYSMON_TASK_PRIORITY, &system_monitor_task);
 
 	/* Create the openamp task */
-	stat = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
+	state = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
 
-	/* Create the fan task */
-	stat = xTaskCreate(FanTask, (const char *)"Fan", configMINIMAL_STACK_SIZE, NULL, FAN_TASK_PRIORITY, &fan_task);
-
-	if (stat != pdPASS)
+	if (state != pdPASS)
 	{
 		LPERROR("cannot create task\n");
 	}

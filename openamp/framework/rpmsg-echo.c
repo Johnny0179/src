@@ -23,10 +23,6 @@ static int shutdown_req = 0;
 extern int init_system(void);
 extern void cleanup_system(void);
 
-// extern
-// extern r5_cmd R5_cmd;
-// extern r5_state R5_state;
-
 /*-----------------------------------------------------------------------------*
  *  RPMSG endpoint callbacks
  *-----------------------------------------------------------------------------*/
@@ -48,7 +44,7 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 	}
 
 //	internel core communication
-	state = InterCoreCom(ept, len, (u8 *)data);
+	state = InterCoreCom(ept, len, data);
 
 	/* Send data back to master */
 	if (state < 0)

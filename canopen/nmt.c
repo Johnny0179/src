@@ -241,27 +241,27 @@ void MotorParaRead(struct can_frame *recv_frame)
 	switch (SlaveId)
 	{
 	case UP_CLAW:
-		motor_para = &up_claw.parameter;
+		motor_para = up_claw.parameter;
 		break;
 
 	case UP_WHEEL:
-		motor_para = &up_wheel.parameter;
+		motor_para = up_wheel.parameter;
 		break;
 
 	case PULLEY1:
-		motor_para = &pulley1.parameter;
+		motor_para = pulley1.parameter;
 		break;
 
 	case PULLEY2:
-		motor_para = &pulley2.parameter;
+		motor_para = pulley2.parameter;
 		break;
 
 	case DOWN_CLAW1:
-		motor_para = &down_claw1.parameter;
+		motor_para = down_claw1.parameter;
 		break;
 
 	case DOWN_CLAW2:
-		motor_para = &down_claw2.parameter;
+		motor_para = down_claw2.parameter;
 		break;
 
 	default:

@@ -5,6 +5,4 @@
 
 #define RPU_PRINTF(format, ...) xil_printf("\r[r5-0] " format, ##__VA_ARGS__)
 
-
-
 #endif

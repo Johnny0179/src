@@ -59,6 +59,10 @@
 #include "xstatus.h"
 #include "stdio.h"
 #include "sysmon/sysmon.h"
+#include "openamp/inter_core_com.h"
+#include "fan/fan.h"
+#include "common/common.h"
+#include "canopen/nmt.h"
 
 /************************** Constant Definitions ****************************/
 
@@ -84,9 +88,10 @@ static int SysMonPsuFractionToInt(float FloatNum);
 
 static XSysMonPsu SysMonInst; /* System Monitor driver instance */
 
-
-
 // global variables
+extern r5_cmd R5_cmd;
+extern r5_state R5_state;
+extern struct nmt nmt;
 
 #ifndef TESTAPP_GEN
 /****************************************************************************/
@@ -385,4 +390,63 @@ u16 GetPlCoreTemp(void)
     //        (u16)(PLTempData), SysMonPsuFractionToInt(PLTempData));
 
     return (u16)(PLTempData);
+}
+
+// System Monitor
+void SysMonPoll(sysmon *sysmon)
+{
+    // the temperature of ps and pl
+    u8 ps_core_temp, pl_core_temp;
+
+    // get the temperature of the ps and pl core
+    ps_core_temp = (u8)GetPsCoreTemp();
+    pl_core_temp = (u8)GetPlCoreTemp();
+
+    // update the temperature
+    R5_state.ps_core_temp = ps_core_temp;
+    R5_state.pl_core_temp = pl_core_temp;
+
+    // referesh fan every 5 seconds
+    if (sysmon->fan_refresh_cnt > 500)
+    {
+        // RPU_PRINTF("------------------------------\n");
+        // RPU_PRINTF("ps core temp:%d\n", R5_state.ps_core_temp);
+        // RPU_PRINTF("pl core temp:%d\n", R5_state.pl_core_temp);
+
+        // turn on the fan if the temperature > 40
+        if (ps_core_temp >= 40 || pl_core_temp >= 40)
+        {
+            FanOn();
+        }
+        else
+        {
+            FanOff();
+        }
+
+        sysmon->fan_refresh_cnt = 0;
+    }
+    else
+    {
+        sysmon->fan_refresh_cnt++;
+    }
+
+    // start nmt
+    if (R5_cmd.nmt_control == 1 && R5_state.nmt_state == 0)
+    {
+        //start nmt
+        nmt.Start();
+
+        // nmt started
+        R5_state.nmt_state = 1;
+    }
+
+    // stop nmt
+    if (R5_cmd.nmt_control == 2 && R5_state.nmt_state == 1)
+    {
+        //stop nmt
+        nmt.Stop(0);
+
+        // nmt stopped
+        R5_state.nmt_state = 0;
+    }
 }

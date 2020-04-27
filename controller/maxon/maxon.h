@@ -30,7 +30,7 @@ struct maxon_type
 // maxon motor type
 struct maxon
 {
-	struct maxon_type parameter;
+	struct maxon_type *parameter;
 
 	// struct motor_ops ops;
 	s8 (*Disable)(struct nmt *nmt, struct maxon *motor);
