@@ -23,7 +23,7 @@
 #include <metal/device.h>
 #include <metal/irq.h>
 #include <metal/utilities.h>
-#include <openamp/platform_info.h>
+#include <openamp/framework/platform_info.h>
 #include <openamp/rpmsg_virtio.h>
 
 /* IPI REGs OFFSET */

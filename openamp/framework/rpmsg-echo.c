@@ -5,14 +5,14 @@ This application echoes back data that was sent to it by the master core. */
 #include "xil_printf.h"
 #include <openamp/open_amp.h>
 #include <metal/alloc.h>
-#include "rsc_table.h"
-#include "platform_info.h"
-#include "rpmsg-echo.h"
+#include <openamp/framework/platform_info.h>
+#include <openamp/framework/rpmsg-echo.h>
+#include <openamp/framework/rsc_table.h>
 #include <string.h>
 #include "FreeRTOS.h"
 #include "task.h"
 
-#include "controller/controller.h"
+#include "openamp/inter_core_com.h"
 #include "common/common.h"
 #include "sysmon/sysmon.h"
 
@@ -23,19 +23,9 @@ static int shutdown_req = 0;
 extern int init_system(void);
 extern void cleanup_system(void);
 
-#include "openamp/rpmsg-echo.h"
-
 // extern
-extern struct robot ccr4;
-extern struct maxon up_claw;
-extern struct maxon up_wheel;
-extern struct maxon pulley1;
-extern struct maxon pulley2;
-extern struct maxon down_claw1;
-extern struct maxon down_claw2;
-
-extern r5_cmd R5_cmd;
-extern r5_state R5_state;
+// extern r5_cmd R5_cmd;
+// extern r5_state R5_state;
 
 /*-----------------------------------------------------------------------------*
  *  RPMSG endpoint callbacks
@@ -45,10 +35,9 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 {
 	(void)priv;
 	(void)src;
-	int state, i;
 
-	//	  u8 rpmsg_payload[MAX_RPMSG_SIZE];
-	u8 *ptr = malloc(MAX_RPMSG_SIZE * sizeof(u8));
+	int state;
+	// u8 temp_buff[MAX_RPMSG_SIZE] = {0};
 
 	/* On reception of a shutdown we signal the application to terminate */
 	if ((*(unsigned int *)data) == SHUTDOWN_MSG)
@@ -58,81 +47,13 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 		return RPMSG_SUCCESS;
 	}
 
-	/* process the data */
-	//
-	ptr = (u8 *)data;
-	//   (*ptr)++;
-
-	// check if is the last payload
-
-	switch ((*ptr))
-	{
-
-		u8 temp_buff[MAX_RPMSG_SIZE] = {0};
-
-	case READ_R5_STATE_FROM_APU:
-		memcpy(temp_buff, &R5_state, sizeof(r5_state));
-		state = rpmsg_send(ept, temp_buff, len);
-		break;
-
-	// 	// write robot contrl cmd and read robot state ?
-	// case ROBOT_RD_WR:
-
-	// 	// write the cmd
-	// 	for (i = 0; i < MAX_RPMSG_SIZE / 2 / 2; i++)
-	// 	{
-	// 		ccr4.cmd[i] = *ptr;
-	// 		ptr++;
-	// 	}
-
-	// 	// read the state
-	// 	for (i = 0; i < MAX_RPMSG_SIZE / 2 / 2; i++)
-	// 	{
-	// 		*ptr = ccr4.state[i];
-	// 		ptr++;
-	// 	}
-
-	// 	state = rpmsg_send(ept, data, len);
-	// 	break;
-
-	// case UP_CLAW:
-	// 	memcpy(temp_buff, &up_claw.parameter, MAX_RPMSG_SIZE);
-	// 	state = rpmsg_send(ept, temp_buff, len);
-	// 	break;
-
-	// case UP_WHEEL:
-	// 	memcpy(temp_buff, &up_wheel.parameter, MAX_RPMSG_SIZE);
-	// 	state = rpmsg_send(ept, temp_buff, len);
-	// 	break;
-
-	// case PULLEY1:
-	// 	memcpy(temp_buff, &pulley1.parameter, MAX_RPMSG_SIZE);
-	// 	state = rpmsg_send(ept, temp_buff, len);
-	// 	break;
-
-	// case PULLEY2:
-	// 	memcpy(temp_buff, &pulley2.parameter, MAX_RPMSG_SIZE);
-	// 	state = rpmsg_send(ept, temp_buff, len);
-	// 	break;
-
-	// case DOWN_CLAW1:
-	// 	memcpy(temp_buff, &down_claw1.parameter, MAX_RPMSG_SIZE);
-	// 	state = rpmsg_send(ept, temp_buff, len);
-	// 	break;
-
-	// case DOWN_CLAW2:
-	// 	memcpy(temp_buff, &down_claw2.parameter, MAX_RPMSG_SIZE);
-	// 	state = rpmsg_send(ept, temp_buff, len);
-	// 	break;
-
-	default:
-		break;
-	}
+//	internel core communication
+	state = InterCoreCom(ept, len, (u8 *)data);
 
 	/* Send data back to master */
 	if (state < 0)
 	{
-		LPERROR("rpmsg_send failed\n");
+		LPERROR("rpmsg process failed\n");
 	}
 
 	return RPMSG_SUCCESS;

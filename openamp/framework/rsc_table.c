@@ -9,8 +9,8 @@
 /* This file populates resource table for BM remote
  * for use by the Linux Master */
 
+#include <openamp/framework/rsc_table.h>
 #include <openamp/open_amp.h>
-#include <openamp/rsc_table.h>
 
 /* Place resource table in special ELF section */
 #define __section_t(S)          __attribute__((__section__(#S)))

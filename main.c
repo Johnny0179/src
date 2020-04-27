@@ -1,5 +1,4 @@
-#include <metal/alloc.h>
-#include <openamp/open_amp.h>
+#include "openamp/inter_core_com.h"
 #include "xil_printf.h"
 
 #include "FreeRTOS.h"
@@ -7,12 +6,9 @@
 #include "semphr.h"
 #include "task.h"
 
-#include "openamp/rsc_table.h"
 #include "canopen/can.h"
 #include "fan/fan.h"
 #include "sysmon/sysmon.h"
-#include "openamp/platform_info.h"
-#include "openamp/rpmsg-echo.h"
 #include "controller/controller.h"
 #include "common/common.h"
 #include "sleep.h"
@@ -78,15 +74,12 @@ static void FanTask(void *pvParameters)
 		ps_core_temp = (u8)GetPsCoreTemp();
 		pl_core_temp = (u8)GetPlCoreTemp();
 
-		ccr4.state[0] = ps_core_temp;
-		ccr4.state[1] = pl_core_temp;
-
 		R5_state.ps_core_temp = ps_core_temp;
 		R5_state.pl_core_temp = pl_core_temp;
 
-		RPU_PRINTF("------------------------------\n");
-		RPU_PRINTF("ps core temp:%d\n", ps_core_temp);
-		RPU_PRINTF("pl core temp:%d\n", pl_core_temp);
+//		 RPU_PRINTF("------------------------------\n");
+//		 RPU_PRINTF("ps core temp:%d\n", R5_state.ps_core_temp);
+//		 RPU_PRINTF("pl core temp:%d\n", R5_state.pl_core_temp);
 
 		// turn on the fan if the temperature > 40
 		if (ps_core_temp >= 40 || pl_core_temp >= 40)
@@ -98,8 +91,8 @@ static void FanTask(void *pvParameters)
 			FanOff();
 		}
 
-		// delay 5s
-		vTaskDelay(5000);
+		// delay 5s, 1000 000 ticks per second
+		vTaskDelay(5000000);
 	}
 }
 
@@ -122,7 +115,7 @@ static void SystemInitTask(void *pvParameters)
 
 	if (state == 0)
 	{
-		RPU_PRINTF("nmt init success!\n");
+		RPU_PRINTF("R5-0 init success!\n");
 	}
 
 	/* Terminate this task */

@@ -14,7 +14,7 @@
 #include "xil_cache.h"
 #include <metal/sys.h>
 #include <metal/irq.h>
-#include <openamp/platform_info.h>
+#include <openamp/framework/platform_info.h>
 
 #define INTC_DEVICE_ID		XPAR_SCUGIC_0_DEVICE_ID
 

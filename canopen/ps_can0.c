@@ -118,7 +118,7 @@ int PsCan0Init()
 {
   int Status;
 
-  xil_printf("ps can0 starts initialization!\r\n");
+  // xil_printf("ps can0 starts initialization!\r\n");
 
   /*
    * Run the Can interrupt example.
@@ -213,12 +213,12 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
   Status = SetupInterruptSystem(IntcInstPtr, CanInstPtr, CanIntrId);
   if (Status != XST_SUCCESS)
   {
-    xil_printf("interrupt system set up failed!\n");
+    // xil_printf("interrupt system set up failed!\n");
     return XST_FAILURE;
   }
   else
   {
-    xil_printf("interrupt system set up success!\n");
+    // xil_printf("interrupt system set up success!\n");
   }
 
   /*
@@ -241,24 +241,7 @@ int CanPsIntrInit(INTC *IntcInstPtr, XCanPs *CanInstPtr, u16 CanDeviceId,
     ;
 #endif
 
-  //   /*
-  //    * Loop back a frame. The RecvHandler is expected to handle
-  //    * the frame reception.
-  //    */
-  //   SendFrame(CanInstPtr); /* Send a frame */
 
-  //   /*
-  //    * Wait here until both sending and reception have been completed.
-  //    */
-  //   while ((SendDone != TRUE) || (RecvDone != TRUE))
-  //     ;
-
-  //   /*
-  //    * Check for errors found in the callbacks.
-  //    */
-  //   if (LoopbackError == TRUE) {
-  //     return XST_LOOPBACK_ERROR;
-  //   }
 
   return XST_SUCCESS;
 }
@@ -438,7 +421,7 @@ static void RecvHandler(void *CallBackRef)
   }
   else
   {
-    xil_printf("\rreceive ISR!\r\n");
+    // xil_printf("\rreceive ISR!\r\n");
   }
 
   // get the can id

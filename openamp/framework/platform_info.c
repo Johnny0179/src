@@ -24,9 +24,9 @@
 #include <metal/device.h>
 #include <metal/irq.h>
 #include <metal/utilities.h>
-#include <openamp/platform_info.h>
+#include <openamp/framework/platform_info.h>
+#include <openamp/framework/rsc_table.h>
 #include <openamp/rpmsg_virtio.h>
-#include <openamp/rsc_table.h>
 #include "delay/delay.h"
 
 #define IPI_DEV_NAME         "ipi_dev"
@@ -238,7 +238,6 @@ int platform_poll(void *priv)
 
 	prproc = rproc->priv;
 	while(1) {
-		xil_printf("openamp poll.\r\n");
 		flags = metal_irq_save_disable();
 		if (!(atomic_flag_test_and_set(&prproc->ipi_nokick))) {
 			metal_irq_restore_enable(flags);

@@ -84,8 +84,7 @@ static int SysMonPsuFractionToInt(float FloatNum);
 
 static XSysMonPsu SysMonInst; /* System Monitor driver instance */
 
-r5_cmd R5_cmd;
-r5_state R5_state;
+
 
 // global variables
 

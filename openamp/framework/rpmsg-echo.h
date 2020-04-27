@@ -8,7 +8,6 @@
 #define LPRINTF(format, ...) xil_printf("[r5-0]"format, ##__VA_ARGS__)
 #define LPERROR(format, ...) LPRINTF("ERROR: " format, ##__VA_ARGS__)
 
-
 int app(struct rpmsg_device *rdev, void *priv);
 
 #endif /* RPMSG_ECHO_H */

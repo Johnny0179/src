@@ -37,7 +37,5 @@ struct maxon
 	s8 (*Enable)(struct nmt *nmt, struct maxon *motor);
 };
 
-// set abs_pos
-// set relative pos
-// set trq
+
 #endif
