@@ -13,23 +13,35 @@ extern struct maxon down_claw2;
 //nmt device
 extern struct nmt nmt;
 
-// controller poll with specified frequency
-static void ControllerPoll(controller *controller, u32 control_freq)
+// controller parameter
+controller_cmd pulley1_cmd;
+
+// controllers parameter
+controllers_cmd controllers_command = {
+    // defualt control frequency is 0.01 KHz
+    .control_frequency_KHz = 0.01};
+
+// controller poll with specified frequency KHz
+static void ControllerPoll(const controller *controller)
 {
+
     // if disable
-    if (0 == (*controller->contrl_cmd).motor_enable)
+    if (1 == controller->contrl_cmd->controller_state)
     {
         // disable the motor
-        (*controller->motor).Disable(&nmt, controller->motor);
+        controller->motor->Disable(&nmt, controller->motor);
     }
-    else
+    else if (2 == controller->contrl_cmd->controller_state)
     {
-        // if already enabled
-        // enable the motor
-        (*controller->motor).Enable(&nmt, controller->motor);
+        // check if already enabled?
+        if ((controller->motor->parameter->status_word_ & 0x00ff) != 0x37)
+        {
+            // enable the motor
+            controller->motor->Enable(&nmt, controller->motor);
+        }
 
         // choose the operation mode
-        switch ((*controller->contrl_cmd).mode_of_operation)
+        switch (controller->contrl_cmd->mode_of_operation)
         {
             // pos mode
         case POS_MODE:
@@ -54,12 +66,22 @@ static void ControllerPoll(controller *controller, u32 control_freq)
 
 /* define the controllers */
 
-// controller parameter
-controller_cmd pulley1_cmd;
-
 // pulley1 controller
-controller pulley1_controller = {
+static controller pulley1_controller = {
     .contrl_cmd = &pulley1_cmd,
     .motor = &pulley1,
-	.Poll=ControllerPoll
-    };
+    .Poll = ControllerPoll};
+
+// controllers poll
+void ControllersPoll(void *ptr)
+{
+    for (;;)
+    {
+
+        // pulley1 controller poll
+        pulley1_controller.Poll(&pulley1_controller);
+
+        vTaskDelay((int)(1000 / controllers_command.control_frequency_KHz));
+        // vTaskDelay(100000);
+    }
+}

@@ -127,11 +127,11 @@ int PsCan0Init()
                          CAN_INTR_VEC_ID);
   if (Status != XST_SUCCESS)
   {
-    xil_printf("ps can0 Initialization failed!\r\n");
+    RPU_PRINTF("ps can0 Initialization failed!\n");
     return XST_FAILURE;
   }
 
-  xil_printf("ps can0 initialization succeeded!\r\n");
+  RPU_PRINTF("ps can0 initialization succeeded!\n");
   return XST_SUCCESS;
 }
 #endif

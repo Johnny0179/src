@@ -7,6 +7,7 @@
 #include "xparameters.h"
 
 #include "xgpiops.h"
+#include "common/common.h"
 
 
 
@@ -20,10 +21,10 @@ void FanInit ()
 
 	if (!lpConfig)
 		{
-		xil_printf ("can't find this gpio\r\n");
+		RPU_PRINTF ("can't find this gpio\n");
 
 		}else{
-			xil_printf("fan init!\r\n");
+			RPU_PRINTF("fan init!\n");
 		}
 
 	XGpioPs_CfgInitialize (&lGpioInstance, lpConfig, lpConfig->BaseAddr);

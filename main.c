@@ -25,7 +25,8 @@ extern struct nmt nmt;
 extern r5_cmd R5_cmd;
 extern r5_state R5_state;
 
-extern struct maxon pulley1;
+// controllers
+extern controller pulley1_controller;
 
 /* task handles */
 static TaskHandle_t comm_task;
@@ -38,9 +39,12 @@ static TaskHandle_t system_monitor_task;
 //
 
 // task priority
-#define INIT_TASK_PRIORITY 7
+#define INIT_TASK_PRIORITY 9
+#define SYSMON_TASK_PRIORITY 8
 
-#define SYSMON_TASK_PRIORITY 6
+// controllers task
+#define CONTROLLERS_TASK_PRIORITY 2
+static TaskHandle_t controllers_task;
 
 #define OPENAMP_TASK_PRIORITY 1
 
@@ -53,10 +57,9 @@ QueueHandle_t xCANQueue = NULL;
 
 static void SysMonTask(void *pvParameters)
 {
-//	init sysmon data type
+	//	init sysmon data type
 	sysmon sysmon = {
-		.fan_refresh_cnt = 0
-		};
+		.fan_refresh_cnt = 0};
 
 	for (;;)
 	{
@@ -74,18 +77,23 @@ static void SystemInitTask(void *pvParameters)
 	// set the core id
 	R5_state.r5_id = 0;
 
-	// init fan
-	FanInit();
+	RPU_PRINTF("------------------------------\n");
+	RPU_PRINTF("R5-0 CORE START!\n");
 
 	// init system monitor
 	SysMonInit();
+
+	// OpenAMP init
+
+	// init fan
+	FanInit();
 
 	// init nmt
 	state = nmt.Init();
 
 	if (state == 0)
 	{
-		RPU_PRINTF("R5-0 init success!\n");
+		// RPU_PRINTF("R5-0 init success!\n");
 	}
 
 	/* Terminate this task */
@@ -126,7 +134,7 @@ static void processing(void *unused_arg)
 	void *platform;
 	struct rpmsg_device *rpdev;
 
-	LPRINTF("Starting application...\n");
+	RPU_PRINTF("Starting application...\n");
 	/* Initialize platform */
 	if (platform_init(NULL, NULL, &platform))
 	{
@@ -176,6 +184,9 @@ int main(void)
 
 	/* Create the openamp task */
 	state = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
+
+	/* Create the pulley1 controller task */
+	state = xTaskCreate(ControllersPoll, (const char *)"Controllers", 1024, NULL, CONTROLLERS_TASK_PRIORITY, &controllers_task);
 
 	if (state != pdPASS)
 	{

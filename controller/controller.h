@@ -3,6 +3,10 @@
 
 #include "openamp/inter_core_com.h"
 #include "controller/maxon/maxon.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+#include "task.h"
 
 /* rpmsg definition */
 
@@ -22,11 +26,46 @@
 #define SPEED_MODE 0x03
 #define TORQUE_MODE 0x0A
 
+// motor command
+typedef struct controller_cmd_type
+{
+    // controller enable control
+    u8 controller_state;
 
-// forward declaration
-typedef struct controller_cmd_type controller_cmd;
+    // mode of operation
+    u16 mode_of_operation;
+
+    // target relative position
+    s32 target_rela_pos;
+
+    // target speed
+    s32 target_speed;
+
+    // target torque
+    s16 target_torque;
+} controller_cmd;
+
+// r5 system command structure
+typedef struct controllers_cmd_type
+{
+    // the rpmsg type
+    u8 rpmsg_type;
+
+    // control frequency
+    float control_frequency_KHz;
+
+    // controllers cmd
+    controller_cmd controller1_cmd;
+    controller_cmd controller2_cmd;
+    controller_cmd controller3_cmd;
+    controller_cmd controller4_cmd;
+    controller_cmd controller5_cmd;
+    controller_cmd controller6_cmd;
+
+} controllers_cmd;
+
+//forward declare
 typedef struct controller_type controller;
-
 
 // controller type
 typedef struct controller_type
@@ -39,12 +78,12 @@ typedef struct controller_type
     // maxon motor
     struct maxon *motor;
 
-    //controller poll function
-    void (*Poll)(controller *controller, u32 control_freq);
+    // pid controller
+    void(*Poll)(const controller *ctrler);
 
-} controller;
+}controller;
 
 // controller poll with specified frequency
-//void ControllerPoll(controller *controller, u32 control_freq);
+void ControllersPoll(void *ptr);
 
 #endif

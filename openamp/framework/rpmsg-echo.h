@@ -10,4 +10,6 @@
 
 int app(struct rpmsg_device *rdev, void *priv);
 
+void OpenAMPInit(void);
+
 #endif /* RPMSG_ECHO_H */

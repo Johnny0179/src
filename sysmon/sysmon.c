@@ -124,7 +124,7 @@ int SysMonInit(void)
         return XST_FAILURE;
     }
 
-    xil_printf("Successfully ran Sysmon Polled Example Test\r\n");
+    // xil_printf("Successfully ran Sysmon Polled Example Test\r\n");
     return XST_SUCCESS;
 }
 #endif
@@ -167,7 +167,7 @@ int SysMonPsuPolledPrintfExample(u16 SysMonDeviceId)
     u64 IntrStatus;
     XSysMonPsu *SysMonInstPtr = &SysMonInst;
 
-    printf("\r\nEntering the SysMon Polled Example. \r\n");
+    // RPU_PRINTF("Entering the SysMon Polled Example. ");
 
     /* Initialize the SysMon driver. */
     ConfigPtr = XSysMonPsu_LookupConfig(SysMonDeviceId);
@@ -269,17 +269,17 @@ int SysMonPsuPolledPrintfExample(u16 SysMonDeviceId)
 	 */
     TempRawData = XSysMonPsu_GetAdcData(SysMonInstPtr, XSM_CH_TEMP, XSYSMON_PS);
     TempData = XSysMonPsu_RawToTemperature_OnChip(TempRawData);
-    printf("\r\nThe Current Temperature is %0d.%03d Centigrades.\r\n",
+    RPU_PRINTF("The Current Temperature is %0d.%03d Centigrades.\n",
            (int)(TempData), SysMonPsuFractionToInt(TempData));
 
     TempRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr, XSM_MAX_TEMP, XSYSMON_PS);
     MaxData = XSysMonPsu_RawToTemperature_OnChip(TempRawData);
-    printf("The Maximum Temperature is %0d.%03d Centigrades. \r\n",
+    RPU_PRINTF("The Maximum Temperature is %0d.%03d Centigrades. \n",
            (int)(MaxData), SysMonPsuFractionToInt(MaxData));
 
     TempRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr, XSM_MIN_TEMP, XSYSMON_PS);
     MinData = XSysMonPsu_RawToTemperature_OnChip(TempRawData);
-    printf("The Minimum Temperature is %0d.%03d Centigrades. \r\n",
+    RPU_PRINTF("The Minimum Temperature is %0d.%03d Centigrades. \n",
            (int)(MinData), SysMonPsuFractionToInt(MinData));
 
     /*
@@ -288,19 +288,19 @@ int SysMonPsuPolledPrintfExample(u16 SysMonDeviceId)
 	 */
     VccIntRawData = XSysMonPsu_GetAdcData(SysMonInstPtr, XSM_CH_SUPPLY1, XSYSMON_PS);
     VccIntData = XSysMonPsu_RawToVoltage(VccIntRawData);
-    printf("\r\nThe Current VCCINT is %0d.%03d Volts. \r\n",
+    RPU_PRINTF("The Current VCCINT is %0d.%03d Volts. \n",
            (int)(VccIntData), SysMonPsuFractionToInt(VccIntData));
 
     VccIntRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MAX_SUPPLY1, XSYSMON_PS);
     MaxData = XSysMonPsu_RawToVoltage(VccIntRawData);
-    printf("The Maximum VCCINT is %0d.%03d Volts. \r\n",
+    RPU_PRINTF("The Maximum VCCINT is %0d.%03d Volts. \n",
            (int)(MaxData), SysMonPsuFractionToInt(MaxData));
 
     VccIntRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MIN_SUPPLY1, XSYSMON_PS);
     MinData = XSysMonPsu_RawToVoltage(VccIntRawData);
-    printf("The Minimum VCCINT is %0d.%03d Volts. \r\n",
+    RPU_PRINTF("The Minimum VCCINT is %0d.%03d Volts. \n",
            (int)(MinData), SysMonPsuFractionToInt(MinData));
 
     /*
@@ -309,22 +309,22 @@ int SysMonPsuPolledPrintfExample(u16 SysMonDeviceId)
 	 */
     VccAuxRawData = XSysMonPsu_GetAdcData(SysMonInstPtr, XSM_CH_SUPPLY3, XSYSMON_PS);
     VccAuxData = XSysMonPsu_RawToVoltage(VccAuxRawData);
-    printf("\r\nThe Current VCCAUX is %0d.%03d Volts. \r\n",
+    RPU_PRINTF("The Current VCCAUX is %0d.%03d Volts. \n",
            (int)(VccAuxData), SysMonPsuFractionToInt(VccAuxData));
 
     VccAuxRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MAX_SUPPLY3, XSYSMON_PS);
     MaxData = XSysMonPsu_RawToVoltage(VccAuxRawData);
-    printf("The Maximum VCCAUX is %0d.%03d Volts. \r\n",
+    RPU_PRINTF("The Maximum VCCAUX is %0d.%03d Volts. \n",
            (int)(MaxData), SysMonPsuFractionToInt(MaxData));
 
     VccAuxRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MIN_SUPPLY3, XSYSMON_PS);
     MinData = XSysMonPsu_RawToVoltage(VccAuxRawData);
-    printf("The Minimum VCCAUX is %0d.%03d Volts. \r\n\r\n",
+    RPU_PRINTF("The Minimum VCCAUX is %0d.%03d Volts. \n",
            (int)(MinData), SysMonPsuFractionToInt(MinData));
 
-    printf("Exiting the SysMon Polled Example. \r\n");
+    // printf("Exiting the SysMon Polled Example. \r\n");
 
     return XST_SUCCESS;
 }
@@ -409,12 +409,12 @@ void SysMonPoll(sysmon *sysmon)
     // referesh fan every 5 seconds
     if (sysmon->fan_refresh_cnt > 500)
     {
-        // RPU_PRINTF("------------------------------\n");
-        // RPU_PRINTF("ps core temp:%d\n", R5_state.ps_core_temp);
-        // RPU_PRINTF("pl core temp:%d\n", R5_state.pl_core_temp);
+//         RPU_PRINTF("------------------------------\n");
+//         RPU_PRINTF("ps core temp:%d\n", R5_state.ps_core_temp);
+//         RPU_PRINTF("pl core temp:%d\n", R5_state.pl_core_temp);
 
-        // turn on the fan if the temperature > 40
-        if (ps_core_temp >= 40 || pl_core_temp >= 40)
+        // turn on the fan if the temperature > 60
+        if (ps_core_temp >= 60 || pl_core_temp >= 60)
         {
             FanOn();
         }

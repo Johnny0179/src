@@ -16,7 +16,6 @@ This application echoes back data that was sent to it by the master core. */
 #include "common/common.h"
 #include "sysmon/sysmon.h"
 
-static struct rpmsg_endpoint lept;
 static int shutdown_req = 0;
 
 /* External functions */
@@ -33,7 +32,6 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 	(void)src;
 
 	int state;
-	// u8 temp_buff[MAX_RPMSG_SIZE] = {0};
 
 	/* On reception of a shutdown we signal the application to terminate */
 	if ((*(unsigned int *)data) == SHUTDOWN_MSG)
@@ -43,13 +41,19 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 		return RPMSG_SUCCESS;
 	}
 
-//	internel core communication
-	state = InterCoreCom(ept, len, data);
+	// //	internel core communication
+	// state = InterCoreCom(ept, len, data);
+
+	// /* Send data back to master */
+	// if (state < 0)
+	// {
+	// 	LPERROR("rpmsg process failed\n");
+	// }
 
 	/* Send data back to master */
-	if (state < 0)
+	if (rpmsg_send(ept, data, len) < 0)
 	{
-		LPERROR("rpmsg process failed\n");
+		LPERROR("rpmsg_send failed\n");
 	}
 
 	return RPMSG_SUCCESS;
@@ -68,6 +72,7 @@ static void rpmsg_service_unbind(struct rpmsg_endpoint *ept)
 int app(struct rpmsg_device *rdev, void *priv)
 {
 	int ret;
+	struct rpmsg_endpoint lept;
 
 	/* Initialize RPMSG framework */
 	LPRINTF("Try to create rpmsg endpoint.\n");
@@ -96,4 +101,11 @@ int app(struct rpmsg_device *rdev, void *priv)
 	rpmsg_destroy_ept(&lept);
 
 	return 0;
+}
+
+/*-----------------------------------------------------------------------------*
+ *  Processing Task
+ *-----------------------------------------------------------------------------*/
+void OpenAMPInit()
+{
 }

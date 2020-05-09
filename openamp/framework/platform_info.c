@@ -27,6 +27,7 @@
 #include <openamp/framework/platform_info.h>
 #include <openamp/framework/rsc_table.h>
 #include <openamp/rpmsg_virtio.h>
+#include "common/common.h"
 #include "delay/delay.h"
 
 #define IPI_DEV_NAME         "ipi_dev"
@@ -48,7 +49,8 @@
 #define	PRIV_RW_USER_RW		(0x00000003U<<8U) /* Full Access */
 
 #if XPAR_CPU_ID == 0
-#define SHARED_MEM_PA  0x41f00000UL
+ #define SHARED_MEM_PA  0x41f00000UL
+//#define SHARED_MEM_PA  0x3ED40000UL//echo test
 #else
 #define SHARED_MEM_PA  0x3EF40000UL
 #endif /* XPAR_CPU_ID */
@@ -141,7 +143,8 @@ platform_create_proc(int proc_index, int rsc_index)
 		remoteproc_remove(&rproc_inst);
 		return NULL;
 	}
-	xil_printf("Initialize remoteproc successfully.\r\n");
+	RPU_PRINTF("Initialize remoteproc successfully.\n");
+	
 
 	return &rproc_inst;
 }
@@ -199,7 +202,8 @@ platform_create_rpmsg_vdev(void *platform, unsigned int vdev_index,
 	shbuf = metal_io_phys_to_virt(shbuf_io,
 				      SHARED_MEM_PA + SHARED_BUF_OFFSET);
 
-	xil_printf("creating remoteproc virtio\r\n");
+	RPU_PRINTF("creating remoteproc virtio\n");
+	RPU_PRINTF("------------------------------\n");
 	/* TODO: can we have a wrapper for the following two functions? */
 	vdev = remoteproc_create_virtio(rproc, vdev_index, role, rst_cb);
 	if (!vdev) {
