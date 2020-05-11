@@ -79,9 +79,8 @@ void ControllersPoll(void *ptr)
     {
 
         // pulley1 controller poll
-        pulley1_controller.Poll(&pulley1_controller);
+//        pulley1_controller.Poll(&pulley1_controller);
 
-        vTaskDelay((int)(1000 / controllers_command.control_frequency_KHz));
-        // vTaskDelay(100000);
+        vTaskDelay((int)(1 / controllers_command.control_frequency_KHz));
     }
 }

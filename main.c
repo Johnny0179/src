@@ -25,28 +25,21 @@ extern struct nmt nmt;
 extern r5_cmd R5_cmd;
 extern r5_state R5_state;
 
-// controllers
-extern controller pulley1_controller;
+/* initial task priority*/
+// init the openamp framework first
+#define OPENAMP_TASK_PRIORITY 6
+TaskHandle_t comm_task;
 
-/* task handles */
-static TaskHandle_t comm_task;
-
+#define INIT_TASK_PRIORITY 5
 static TaskHandle_t SystemInitTaskHandle;
 
 // system monitor task handle
 static TaskHandle_t system_monitor_task;
-
-//
-
-// task priority
-#define INIT_TASK_PRIORITY 9
-#define SYSMON_TASK_PRIORITY 8
+#define SYSMON_TASK_PRIORITY 4
 
 // controllers task
-#define CONTROLLERS_TASK_PRIORITY 2
+#define CONTROLLERS_TASK_PRIORITY 3
 static TaskHandle_t controllers_task;
-
-#define OPENAMP_TASK_PRIORITY 1
 
 /* global variables */
 // mutex
@@ -65,7 +58,7 @@ static void SysMonTask(void *pvParameters)
 	{
 		SysMonPoll(&sysmon);
 		// 10ms
-		vTaskDelay(10000);
+		vTaskDelay(10);
 	}
 }
 
@@ -76,9 +69,6 @@ static void SystemInitTask(void *pvParameters)
 
 	// set the core id
 	R5_state.r5_id = 0;
-
-	RPU_PRINTF("------------------------------\n");
-	RPU_PRINTF("R5-0 CORE START!\n");
 
 	// init system monitor
 	SysMonInit();
@@ -170,23 +160,26 @@ int main(void)
 {
 	BaseType_t state;
 
+	RPU_PRINTF("------------------------------\n");
+	RPU_PRINTF("R5-0 CORE START!\n");
+
 	/* Before a semaphore is used it must be explicitly created.In this example amutex type semaphore is created. */
 	xCANMutex = xSemaphoreCreateMutex();
 
 	/* Before a queue can be used it must first be created.The address of the data is transfered between the isr and queue*/
 	xCANQueue = xQueueCreate(10, sizeof(struct can_frame));
 
-	/* Create the system init task */
-	state = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
-
-	/* Create the system monitor task */
-	state = xTaskCreate(SysMonTask, (const char *)"System Monitor", 1024, NULL, SYSMON_TASK_PRIORITY, &system_monitor_task);
-
 	/* Create the openamp task */
 	state = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
 
-	/* Create the pulley1 controller task */
-	state = xTaskCreate(ControllersPoll, (const char *)"Controllers", 1024, NULL, CONTROLLERS_TASK_PRIORITY, &controllers_task);
+	 /* Create the system init task */
+	 state = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
+
+	 /* Create the system monitor task */
+	 state = xTaskCreate(SysMonTask, (const char *)"System Monitor", 1024, NULL, SYSMON_TASK_PRIORITY, &system_monitor_task);
+
+	 /* Create the pulley1 controller task */
+	 state = xTaskCreate(ControllersPoll, (const char *)"Controllers", 1024, NULL, CONTROLLERS_TASK_PRIORITY, &controllers_task);
 
 	if (state != pdPASS)
 	{

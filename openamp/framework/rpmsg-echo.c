@@ -17,7 +17,7 @@ This application echoes back data that was sent to it by the master core. */
 #include "sysmon/sysmon.h"
 
 static int shutdown_req = 0;
-
+extern TaskHandle_t comm_task;
 /* External functions */
 extern int init_system(void);
 extern void cleanup_system(void);
@@ -41,20 +41,20 @@ static int rpmsg_endpoint_cb(struct rpmsg_endpoint *ept, void *data, size_t len,
 		return RPMSG_SUCCESS;
 	}
 
-	// //	internel core communication
-	// state = InterCoreCom(ept, len, data);
+	 //	internel core communication
+	 state = InterCoreCom(ept, len, data);
 
-	// /* Send data back to master */
-	// if (state < 0)
-	// {
-	// 	LPERROR("rpmsg process failed\n");
-	// }
+	 if (state < 0)
+	 {
+	 	LPERROR("rpmsg process failed\n");
+	 }
 
-	/* Send data back to master */
-	if (rpmsg_send(ept, data, len) < 0)
-	{
-		LPERROR("rpmsg_send failed\n");
-	}
+//	/* echo test*/
+//	/* Send data back to master */
+//	if (rpmsg_send(ept, data, len) < 0)
+//	{
+//		LPERROR("rpmsg_send failed\n");
+//	}
 
 	return RPMSG_SUCCESS;
 }
@@ -75,7 +75,7 @@ int app(struct rpmsg_device *rdev, void *priv)
 	struct rpmsg_endpoint lept;
 
 	/* Initialize RPMSG framework */
-	LPRINTF("Try to create rpmsg endpoint.\n");
+	RPU_PRINTF("Try to create rpmsg endpoint.\n");
 
 	ret = rpmsg_create_ept(&lept, rdev, RPMSG_SERVICE_NAME,
 						   0, RPMSG_ADDR_ANY, rpmsg_endpoint_cb,
@@ -86,7 +86,10 @@ int app(struct rpmsg_device *rdev, void *priv)
 		return -1;
 	}
 
-	LPRINTF("Successfully created rpmsg endpoint.\n");
+	RPU_PRINTF("Successfully created rpmsg endpoint.\n");
+
+	// chage task priority to 2
+	vTaskPrioritySet(comm_task, 2);
 
 	while (1)
 	{

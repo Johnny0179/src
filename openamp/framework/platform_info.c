@@ -29,6 +29,10 @@
 #include <openamp/rpmsg_virtio.h>
 #include "common/common.h"
 #include "delay/delay.h"
+#include "FreeRTOS.h"
+#include "task.h"
+
+// extern TaskHandle_t comm_task;
 
 #define IPI_DEV_NAME         "ipi_dev"
 #define IPI_BUS_NAME         "generic"
@@ -203,7 +207,10 @@ platform_create_rpmsg_vdev(void *platform, unsigned int vdev_index,
 				      SHARED_MEM_PA + SHARED_BUF_OFFSET);
 
 	RPU_PRINTF("creating remoteproc virtio\n");
-	RPU_PRINTF("------------------------------\n");
+
+	// chage task priority to 1
+	// vTaskPrioritySet(comm_task, 1);
+
 	/* TODO: can we have a wrapper for the following two functions? */
 	vdev = remoteproc_create_virtio(rproc, vdev_index, role, rst_cb);
 	if (!vdev) {
@@ -211,12 +218,12 @@ platform_create_rpmsg_vdev(void *platform, unsigned int vdev_index,
 		goto err1;
 	}
 
-	xil_printf("initializing rpmsg shared buffer pool\r\n");
+	RPU_PRINTF("initializing rpmsg shared buffer pool\r\n");
 	/* Only RPMsg virtio master needs to initialize the shared buffers pool */
 	rpmsg_virtio_init_shm_pool(&shpool, shbuf,
 				   (SHARED_MEM_SIZE - SHARED_BUF_OFFSET));
 
-	xil_printf("initializing rpmsg vdev\r\n");
+	RPU_PRINTF("initializing rpmsg vdev\r\n");
 	/* RPMsg virtio slave can set shared buffers pool argument to NULL */
 	ret =  rpmsg_init_vdev(rpmsg_vdev, vdev, ns_bind_cb,
 			       shbuf_io,
@@ -225,7 +232,7 @@ platform_create_rpmsg_vdev(void *platform, unsigned int vdev_index,
 		xil_printf("failed rpmsg_init_vdev\r\n");
 		goto err2;
 	}
-	xil_printf("initializing rpmsg vdev\r\n");
+	RPU_PRINTF("initializing rpmsg vdev\r\n");
 	return rpmsg_virtio_get_rpmsg_device(rpmsg_vdev);
 err2:
 	remoteproc_remove_virtio(rproc, vdev);
@@ -249,7 +256,6 @@ int platform_poll(void *priv)
 			break;
 		}
 		_rproc_wait();
-		// vTaskDelay(10);
 		metal_irq_restore_enable(flags);
 	}
 	return 0;

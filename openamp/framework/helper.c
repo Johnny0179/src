@@ -16,27 +16,60 @@
 #include <metal/irq.h>
 #include <openamp/framework/platform_info.h>
 
-#define INTC_DEVICE_ID		XPAR_SCUGIC_0_DEVICE_ID
+#define INTC_DEVICE_ID XPAR_SCUGIC_0_DEVICE_ID
 
 extern XScuGic xInterruptController;
 /* Interrupt Controller setup */
 static int app_gic_initialize(void)
 {
+	uint32_t int_id;
+	uint32_t mask_cpu_id = ((u32)0x1 << XPAR_CPU_ID);
+	uint32_t target_cpu;
+
+	mask_cpu_id |= mask_cpu_id << 8U;
+	mask_cpu_id |= mask_cpu_id << 16U;
+
+	Xil_ExceptionDisable();
+
+	/* Only associate interrupt needed to this CPU */
+	for (int_id = 32U; int_id < XSCUGIC_MAX_NUM_INTR_INPUTS; int_id = int_id + 4U)
+	{
+		target_cpu = XScuGic_DistReadReg(&xInterruptController,
+										 XSCUGIC_SPI_TARGET_OFFSET_CALC(int_id));
+		/* Remove current CPU from interrupt target register */
+		target_cpu &= ~mask_cpu_id;
+		XScuGic_DistWriteReg(&xInterruptController,
+							 XSCUGIC_SPI_TARGET_OFFSET_CALC(int_id), target_cpu);
+	}
+	//	enable the IPI Interrupt
+	XScuGic_InterruptMaptoCpu(&xInterruptController, XPAR_CPU_ID, IPI_IRQ_VECT_ID);
+
+	//	enable the freertos system tick interrupt
+	XScuGic_InterruptMaptoCpu(&xInterruptController, XPAR_CPU_ID, configTIMER_INTERRUPT_ID);
+
+	//	enable the ps can0 interrupt
+	XScuGic_InterruptMaptoCpu(&xInterruptController, XPAR_CPU_ID, XPAR_XCANPS_0_INTR);
+
+	/* Disable the interrupt before enabling exception to avoid interrupts
+	 * received before exception is enabled.
+	 */
+	XScuGic_Disable(&xInterruptController, IPI_IRQ_VECT_ID);
+
+	Xil_ExceptionEnable();
 	/* Connect Interrupt ID with ISR */
 	XScuGic_Connect(&xInterruptController, IPI_IRQ_VECT_ID,
-			(Xil_ExceptionHandler)metal_xlnx_irq_isr,
-			(void *)IPI_IRQ_VECT_ID);
+					(Xil_ExceptionHandler)metal_xlnx_irq_isr,
+					(void *)IPI_IRQ_VECT_ID);
 
 	return 0;
 }
 
 static void system_metal_logger(enum metal_log_level level,
-			   const char *format, ...)
+								const char *format, ...)
 {
 	(void)level;
 	(void)format;
 }
-
 
 /* Main hw machinery initialization entry point, called from main()*/
 /* return 0 on success */
@@ -56,9 +89,10 @@ int init_system(void)
 
 	/* Initialize metal Xilinx IRQ controller */
 	ret = metal_xlnx_irq_init();
-	if (ret) {
+	if (ret)
+	{
 		xil_printf("%s: Xilinx metal IRQ controller init failed.\n",
-			__func__);
+				   __func__);
 	}
 
 	return ret;

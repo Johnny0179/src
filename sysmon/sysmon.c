@@ -407,7 +407,7 @@ void SysMonPoll(sysmon *sysmon)
     R5_state.pl_core_temp = pl_core_temp;
 
     // referesh fan every 5 seconds
-    if (sysmon->fan_refresh_cnt > 500)
+    if (sysmon->fan_refresh_cnt > 5000)
     {
 //         RPU_PRINTF("------------------------------\n");
 //         RPU_PRINTF("ps core temp:%d\n", R5_state.ps_core_temp);
