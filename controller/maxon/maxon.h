@@ -32,10 +32,16 @@ struct maxon
 {
 	struct maxon_type *parameter;
 
-	// struct motor_ops ops;
+	// motor control
 	s8 (*Disable)(struct nmt *nmt, struct maxon *motor);
 	s8 (*Enable)(struct nmt *nmt, struct maxon *motor);
-};
 
+	// set torque
+
+	// set position
+
+	// set speed
+	
+};
 
 #endif

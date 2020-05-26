@@ -49,7 +49,7 @@ void NMTstart(void)
 
 	if (nmt.can_device->send(&nmt_frame) != -1)
 	{
-		xil_printf("Start all nodes!\r\n");
+		RPU_PRINTF("Start all nodes!\r\n");
 	}
 	else
 	{
@@ -73,16 +73,16 @@ void NMTstartID(u8 slave_id)
 	{
 		if (slave_id != 0)
 		{
-			xil_printf("Start node%d!\r\n", slave_id);
+			RPU_PRINTF("Start node%d!\r\n", slave_id);
 		}
 		else
 		{
-			xil_printf("Start all nodes!\r\n");
+			RPU_PRINTF("Start all nodes!\r\n");
 		}
 	}
 	else
 	{
-		xil_printf("CAN communication error!\n");
+		RPU_PRINTF("CAN communication error!\n");
 	}
 }
 
@@ -125,12 +125,12 @@ void NMTstop(u8 slave_id)
 		}
 		else
 		{
-			xil_printf("Stop all nodes!\n");
+			RPU_PRINTF("Stop all nodes!\n");
 		}
 	}
 	else
 	{
-		xil_printf("CAN communication error!\n");
+		RPU_PRINTF("CAN communication error!\n");
 	}
 }
 

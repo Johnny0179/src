@@ -57,8 +57,8 @@ static void SysMonTask(void *pvParameters)
 	for (;;)
 	{
 		SysMonPoll(&sysmon);
-		// 10ms
-		vTaskDelay(10);
+		// 1s
+		vTaskDelay(1000);
 	}
 }
 
@@ -81,9 +81,15 @@ static void SystemInitTask(void *pvParameters)
 	// init nmt
 	state = nmt.Init();
 
-	if (state == 0)
+	//	stop nmt
+	nmt.Stop(0);
+
+	// start nmt
+	nmt.Start();
+
+	if (state != 0)
 	{
-		// RPU_PRINTF("R5-0 init success!\n");
+		RPU_PRINTF("R5-0 init fialed!\n");
 	}
 
 	/* Terminate this task */
@@ -170,16 +176,16 @@ int main(void)
 	xCANQueue = xQueueCreate(10, sizeof(struct can_frame));
 
 	/* Create the openamp task */
-	state = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
+	// state = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
 
-	 /* Create the system init task */
-	 state = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
+	/* Create the system init task */
+	state = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
 
-	 /* Create the system monitor task */
-	 state = xTaskCreate(SysMonTask, (const char *)"System Monitor", 1024, NULL, SYSMON_TASK_PRIORITY, &system_monitor_task);
+	/* Create the system monitor task */
+	  state = xTaskCreate(SysMonTask, (const char *)"System Monitor", 1024, NULL, SYSMON_TASK_PRIORITY, &system_monitor_task);
 
-	 /* Create the pulley1 controller task */
-	 state = xTaskCreate(ControllersPoll, (const char *)"Controllers", 1024, NULL, CONTROLLERS_TASK_PRIORITY, &controllers_task);
+	/* Create the pulley1 controller task */
+	  state = xTaskCreate(ControllersPoll, (const char *)"Controllers", 1024, NULL, CONTROLLERS_TASK_PRIORITY, &controllers_task);
 
 	if (state != pdPASS)
 	{

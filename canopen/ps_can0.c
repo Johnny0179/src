@@ -353,7 +353,7 @@ int SendFrame(const struct can_frame *tx_frame)
  ******************************************************************************/
 static void SendHandler(void *CallBackRef)
 {
-  // xil_printf("\r can send isr!\n");
+//  xil_printf("\r can send isr!\n");
   // BaseType_t xHigherPriorityTaskWoken;
 
   // /* The xHigherPriorityTaskWoken parameter must be initialized to pdFALSE as
@@ -436,12 +436,12 @@ static void RecvHandler(void *CallBackRef)
     recv_frame->data[Index] = *FramePtr++;
   }
 
-  // xil_printf("Receive can id:%lx\r\n", recv_frame->can_id);
-  // xil_printf("Receive can dlc:%lx\r\n", recv_frame->can_dlc);
-  // for (int i = 0; i < recv_frame->can_dlc; i++)
-  // {
-  //   xil_printf("can data[%d]:%lx\r\n", i, recv_frame->data[i]);
-  // }
+//   xil_printf("Receive can id:%lx\r\n", recv_frame->can_id);
+//   xil_printf("Receive can dlc:%lx\r\n", recv_frame->can_dlc);
+//   for (int i = 0; i < recv_frame->can_dlc; i++)
+//   {
+//     xil_printf("can data[%d]:%lx\r\n", i, recv_frame->data[i]);
+//   }
 
   // read motor parameters
   nmt.ParaRead(recv_frame);
@@ -757,7 +757,7 @@ static int SetupInterruptSystem(INTC *IntcInstancePtr, XCanPs *CanInstancePtr,
   /*
    * Enable the interrupt for the CAN device.
    */
-  XScuGic_EnableIntr(IntcInstancePtr, CanIntrId);
+  XScuGic_Enable(IntcInstancePtr, CanIntrId);
 #endif
 #ifndef TESTAPP_GEN
   /*

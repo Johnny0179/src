@@ -11,7 +11,7 @@
 /* rpmsg definition */
 
 // motor number
-#define MOTOR_NUM 6
+// #define MOTOR_NUM 6
 
 // motor id
 #define UP_CLAW 1
@@ -26,24 +26,80 @@
 #define SPEED_MODE 0x03
 #define TORQUE_MODE 0x0A
 
-// motor command
-typedef struct controller_cmd_type
+// controller state control
+#define CONTROLLER_DISABLE 1
+#define CONTROLLER_ENABLE 2
+
+// pulley operation mode
+
+// pull master direction
+#define PULL_UP 1
+#define PULL_DOWN 2
+
+// claw control
+#define CLAW_HOLD 1
+#define CLAW_LOOSE 2
+
+// claw control command
+typedef struct claw_control_cmd_type
 {
-    // controller enable control
-    u8 controller_state;
+    // motion mode
+    u8 motion_mode;
 
-    // mode of operation
-    u16 mode_of_operation;
+    // hold torque;
+    s16 hold_torque;
 
-    // target relative position
-    s32 target_rela_pos;
+    // loose distance
+    s32 loose_dis;
 
-    // target speed
-    s32 target_speed;
+} claw_control_cmd;
 
-    // target torque
-    s16 target_torque;
-} controller_cmd;
+// upwheel control command
+typedef struct upwheel_control_cmd_type
+{
+    // motion mode
+    u8 motion_mode;
+
+    // move distance
+    s32 move_dis;
+
+} upwheel_control_cmd;
+
+// define pulley motion mode
+#define IDLE_MODE 0 //idle mode
+#define FOLLOW_MODE 1 //follow slave, impedance control
+#define PULL_MODE 2   //pull master
+
+// pulley controll command
+typedef struct pulley_control_cmd_type
+{
+    //choose motion mode
+    u8 motion_mode;
+
+    // follow slave
+    u8 follow_slave;
+
+    // pull master distance
+    s32 pull_dis;
+
+} pulley_control_cmd;
+
+// // motor command
+// typedef struct controller_cmd_type
+// {
+//     // controller enable control
+//     u8 controller_state;
+
+//     // claw control
+//     claw_control_cmd claw_control_cmd_;
+
+//     // move distance for upwheel
+//     upwheel_control_cmd upwheel_control_cmd_;
+
+//     // pulley control
+//     pulley_control_cmd pulley_control_cmd_;
+
+// } controller_cmd;
 
 // r5 system command structure
 typedef struct controllers_cmd_type
@@ -55,12 +111,12 @@ typedef struct controllers_cmd_type
     float control_frequency_KHz;
 
     // controllers cmd
-    controller_cmd controller1_cmd;
-    controller_cmd controller2_cmd;
-    controller_cmd controller3_cmd;
-    controller_cmd controller4_cmd;
-    controller_cmd controller5_cmd;
-    controller_cmd controller6_cmd;
+    claw_control_cmd upclaw_cmd_;
+    upwheel_control_cmd upwheel_cmd_;
+    pulley_control_cmd pulley1_cmd_;
+    pulley_control_cmd pulley2_cmd_;
+    claw_control_cmd downclaw1_cmd_;
+    claw_control_cmd downclaw2_cmd_;
 
 } controllers_cmd;
 
@@ -71,17 +127,21 @@ typedef struct controller_type controller;
 typedef struct controller_type
 {
     // controller command
-    controller_cmd *contrl_cmd;
+    claw_control_cmd *claw_control_cmd_;
+    upwheel_control_cmd *upwheel_control_cmd_;
+    pulley_control_cmd *pulley_control_cmd_;
 
-    // controller state
+    // enable controller
+    void (*enable)(const controller *controller);
+    // controller poll
+    void (*poll)(const controller *controller);
+
+    // Impedance control
 
     // maxon motor
     struct maxon *motor;
 
-    // pid controller
-    void(*Poll)(const controller *ctrler);
-
-}controller;
+} controller;
 
 // controller poll with specified frequency
 void ControllersPoll(void *ptr);
