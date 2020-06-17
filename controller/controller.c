@@ -1,4 +1,3 @@
-
 #include "controller/controller.h"
 #include "controller/maxon/maxon.h"
 
@@ -13,201 +12,118 @@ extern struct maxon down_claw2;
 //nmt device
 extern struct nmt nmt;
 
+// task handlers
+extern TaskHandle_t pulleys_control_task;
+
 // controllers parameter
-controllers_cmd controllers_command = {
-    // defualt control frequency is 0.01 KHz
-    .control_frequency_KHz = 0.01};
+r5_cmd R5_cmd = {
+    // defualt control frequency is 0.1 KHz
+    .control_frequency_KHz = 0.1,
+    // defualt upclaw hold torque 30%
+    .upclaw_hold_trq = 300,
+    // defualt upclaw loose relative distance
+    .upclaw_rltv_pos = -344108};
 
 // enable controller
-static void EnableController(const controller *controller)
+void EnableController(const struct maxon *motor)
 {
     // check if already enabled?
-    if ((controller->motor->parameter->status_word_ & 0x00ff) != 0x37)
+    if ((motor->parameter->status_word_ & 0x00ff) != 0x37)
     {
         // enable the motor
-        RPU_PRINTF("enable controller:%d\n",controller->motor->parameter->motor_id_);
-        controller->motor->Enable(&nmt, controller->motor);
+        RPU_PRINTF("Enable controller[%d]\n", motor->parameter->motor_id_);
+        motor->Enable(&nmt, motor);
     }
 }
 
-// impedance control
-static void ImpedanceControl(const struct maxon *motor)
+// tighten the pulleys
+void TightenPulleys(void)
 {
-    s16 init_torque, current_torque;
-    // get current torque
-    current_torque=motor->parameter->actual_average_torque_;
 
-    RPU_PRINTF("controller[%d] current torque: %d\n",motor->parameter->motor_id_,current_torque);
+    // tighten the pulley, 12% torque
+    pulley1.Torque(&nmt, &pulley1, 120);
+    pulley2.Torque(&nmt, &pulley2, 120);
 
+    //    // wait the toruqe reach the target, 1% error
+    //    while (abs(pulley1.parameter->actual_average_torque_ - 1) > 10)
+    //    {
+    //    	RPU_PRINTF("Current torque:%d\n", pulley1.parameter->actual_average_torque_);
+    //    }
+
+    // wait pulley tighten complete
+    while (pulley1.parameter->actual_average_vel_ != 0 || pulley2.parameter->actual_average_vel_ != 0)
+    {
+    }
 }
 
-/* define the controllers */
-// pulleys control
-static void PulleyControl(const controller *controller)
+// upclaw hold
+static void UpClawHold(void)
 {
-    switch (controller->pulley_control_cmd_->motion_mode)
+    // enable upclaw
+    up_claw.Enable(&nmt, &up_claw);
+    //set the torque,30%
+    up_claw.Torque(&nmt, &up_claw, R5_cmd.upclaw_hold_trq);
+    // wait hold complete
+    while (up_claw.parameter->actual_average_vel_ != 0)
     {
-    case IDLE_MODE:
-        // if not disabled
-        if (controller->motor->parameter->status_word_ != 0x0240)
-        {
-            controller->motor->Disable(&nmt, controller->motor);
-        }
+    }
+}
+
+//upclaw loose
+static void UpClawLoose(void)
+{
+    // enable upclaw
+    up_claw.Enable(&nmt, &up_claw);
+
+    // set relative pos
+    up_claw.RelPos(&nmt, &up_claw, R5_cmd.upclaw_rltv_pos);
+}
+
+/**
+ * MotionControlFSM() - Motion Control Finite State Machine
+ * @R5_cmd: the controller command from APU
+ *
+ * Returns .
+ */
+static void MotionControlFSM(r5_cmd *R5_cmd)
+{
+    // choose the motion mode
+    switch (R5_cmd->cntrlr_motion_cmd)
+    {
+    // Idle state
+    case IDLE:
+        // do nothing
+
         break;
 
-    case FOLLOW_MODE:
-        EnableController(controller);
-        ImpedanceControl(controller->motor);
+    // upclaw hold
+    case UPCLAW_HOLD:
+        UpClawHold();
         break;
 
-    case PULL_MODE:
-        /* code */
+    // upclaw loose
+    case UPCLAW_LOOSE:
+        UpClawLoose();
         break;
 
     default:
         break;
     }
-    // //check if enabled
-    // if (controller->pulley_control_cmd_->state == CONTROLLER_ENABLE)
-    // {
-    //     // check if already enabled?
-    //     if ((controller->motor->parameter->status_word_ & 0x00ff) != 0x37)
-    //     {
-    //         // enable the motor
-    //         RPU_PRINTF("enable motor\n");
-    //         controller->motor->Enable(&nmt, controller->motor);
-    //     }
-
-    //     // choose the operation mode
-    //     switch (controller->pulley_control_cmd_->motion_mode)
-    //     {
-    //     case FOLLOW_MODE:
-    //         /* code */
-    //         break;
-
-    //     case PULL_MODE:
-    //         /* code */
-    //         break;
-
-    //     default:
-    //         break;
-    //     }
-    // } // disable the controller
-    // else if (controller->pulley_control_cmd_->state == CONTROLLER_DISABLE)
-    // {
-    //     // not disabled
-    //     if (controller->motor->parameter->status_word_ != 0x0240)
-    //     {
-    //         controller->motor->Disable(&nmt, controller->motor);
-    //     }
-    // }
 }
-// pulley1 controller
-static controller pulley1_controller = {
-    .pulley_control_cmd_ = &controllers_command.pulley1_cmd_,
-    .motor = &pulley1,
-    .poll = PulleyControl};
 
-// //Up claw control
-// static void UpClawControl(const controller *controller)
-// {
-//     switch (controller->contrl_cmd->claw_control_cmd_.motion_mode)
-//     {
-
-//     case CLAW_HOLD:
-//         //    claw hold
-//         break;
-
-//     case CLAW_LOOSE:
-//         // claw loose
-
-//         break;
-//     default:
-//         break;
-//     }
-// }
-
-// //down claws control
-// static void DownClawControl(const controller *controller)
-// {
-//     switch (controller->contrl_cmd->claw_control_cmd_.motion_mode)
-//     {
-
-//     case CLAW_HOLD:
-//         //    claw hold
-//         break;
-
-//     case CLAW_LOOSE:
-//         // claw loose
-
-//         break;
-//     default:
-//         break;
-//     }
-// }
-
-// // upwheel control
-// static void UpWheelControl(const controller *controller)
-// {
-//     // move to target distance
-// }
-
-// // controller poll with specified frequency KHz
-// static void ControllerPoll(const controller *controller)
-// {
-//     // if disable
-//     if (CONTROLLER_DISABLE == controller->contrl_cmd->controller_state)
-//     {
-//         // disable the motor
-//         controller->motor->Disable(&nmt, controller->motor);
-//     }
-//     else if (CONTROLLER_ENABLE == controller->contrl_cmd->controller_state)
-//     {
-//         // check if already enabled?
-//         if ((controller->motor->parameter->status_word_ & 0x00ff) != 0x37)
-//         {
-//             // enable the motor
-//             RPU_PRINTF("enable motor\n");
-//             controller->motor->Enable(&nmt, controller->motor);
-//         }
-
-//         /* choose motor */
-//         // if up claw
-//         if (controller->motor->parameter->motor_id_ == 1)
-//         {
-//             // up claw control
-//             UpClawControl(controller);
-//         } //if down claws
-//         else if (controller->motor->parameter->motor_id_ == 5 || controller->motor->parameter->motor_id_ == 6)
-//         {
-//             //down claw control
-//             DownClawControl(controller);
-//         } //if upwheel
-//         else if (controller->motor->parameter->motor_id_ == 2)
-//         {
-//             // upwheel control
-//         } //if pulleys
-//         else if (controller->motor->parameter->motor_id_ == 3 || controller->motor->parameter->motor_id_ == 4)
-//         {
-//             // pulleys control
-//         }
-//     }
-// }
-
-// controllers poll
+// controllers task control
 void ControllersPoll(void *ptr)
 {
     /* test here */
-
+    RPU_PRINTF("motion test\n");
     //	enable pulley1 controller
-    controllers_command.pulley1_cmd_.motion_mode = FOLLOW_MODE;
+    R5_cmd.cntrlr_motion_cmd = UPCLAW_HOLD;
 
     for (;;)
     {
+        // controller FSM
+        MotionControlFSM(&R5_cmd);
 
-        // pulley1 controller poll
-        pulley1_controller.poll(&pulley1_controller);
-
-        vTaskDelay((int)(1 / controllers_command.control_frequency_KHz));
+        vTaskDelay((int)(1 / R5_cmd.control_frequency_KHz));
     }
 }

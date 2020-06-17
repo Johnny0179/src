@@ -26,27 +26,28 @@ extern r5_cmd R5_cmd;
 extern r5_state R5_state;
 
 /* initial task priority*/
-// init the openamp framework first
-#define OPENAMP_TASK_PRIORITY 6
+// init the openamp framework first, then change to 2
+#define OPENAMP_TASK_PRIORITY 7
+
 TaskHandle_t comm_task;
 
-#define INIT_TASK_PRIORITY 5
+#define INIT_TASK_PRIORITY 6
 static TaskHandle_t SystemInitTaskHandle;
 
 // system monitor task handle
 static TaskHandle_t system_monitor_task;
-#define SYSMON_TASK_PRIORITY 4
+#define SYSMON_TASK_PRIORITY 5
 
 // controllers task
-#define CONTROLLERS_TASK_PRIORITY 3
+#define CONTROLLERS_TASK_PRIORITY 4
 static TaskHandle_t controllers_task;
 
 /* global variables */
 // mutex
 SemaphoreHandle_t xCANMutex;
 
-// queue
-QueueHandle_t xCANQueue = NULL;
+// // queue
+// QueueHandle_t xCANQueue = NULL;
 
 static void SysMonTask(void *pvParameters)
 {
@@ -81,12 +82,6 @@ static void SystemInitTask(void *pvParameters)
 	// init nmt
 	state = nmt.Init();
 
-	//	stop nmt
-	nmt.Stop(0);
-
-	// start nmt
-	nmt.Start();
-
 	if (state != 0)
 	{
 		RPU_PRINTF("R5-0 init fialed!\n");
@@ -96,31 +91,31 @@ static void SystemInitTask(void *pvParameters)
 	vTaskDelete(SystemInitTaskHandle);
 }
 
-/*CAN unpack task*/
-static void CANUnpackTask(void *pvParameters)
-{
-	// xil_printf("CAN unpack task!\n");
-	struct can_frame *recv_frame;
+// /*CAN unpack task*/
+// static void CANUnpackTask(void *pvParameters)
+// {
+// 	// xil_printf("CAN unpack task!\n");
+// 	struct can_frame *recv_frame;
 
-	for (;;)
-	{
-		/* Block on the queue to wait for data to arrive. */
-		xQueueReceive(xCANQueue, recv_frame, portMAX_DELAY);
+// 	for (;;)
+// 	{
+// 		/* Block on the queue to wait for data to arrive. */
+// 		xQueueReceive(xCANQueue, recv_frame, portMAX_DELAY);
 
-		RPU_PRINTF("can upack task!\n");
+// 		RPU_PRINTF("can upack task!\n");
 
-		RPU_PRINTF("can id:%lx\r\n", recv_frame->can_id);
-		RPU_PRINTF("can dlc:%lx\r\n", recv_frame->can_dlc);
+// 		RPU_PRINTF("can id:%lx\r\n", recv_frame->can_id);
+// 		RPU_PRINTF("can dlc:%lx\r\n", recv_frame->can_dlc);
 
-		for (int i = 0; i < recv_frame->can_dlc; i++)
-		{
-			RPU_PRINTF("can data[%d]:%lx\r\n", i, recv_frame->data[i]);
-		}
+// 		for (int i = 0; i < recv_frame->can_dlc; i++)
+// 		{
+// 			RPU_PRINTF("can data[%d]:%lx\r\n", i, recv_frame->data[i]);
+// 		}
 
-		// read the rxpdo
-		nmt.ParaRead(recv_frame);
-	}
-}
+// 		// read the rxpdo
+// 		nmt.ParaRead(recv_frame);
+// 	}
+// }
 
 /*-----------------------------------------------------------------------------*
  *  Processing Task
@@ -172,20 +167,20 @@ int main(void)
 	/* Before a semaphore is used it must be explicitly created.In this example amutex type semaphore is created. */
 	xCANMutex = xSemaphoreCreateMutex();
 
-	/* Before a queue can be used it must first be created.The address of the data is transfered between the isr and queue*/
-	xCANQueue = xQueueCreate(10, sizeof(struct can_frame));
+	// /* Before a queue can be used it must first be created.The address of the data is transfered between the isr and queue*/
+	// xCANQueue = xQueueCreate(10, sizeof(struct can_frame));
 
 	/* Create the openamp task */
-	// state = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
+	state = xTaskCreate(processing, (const char *)"OpenAMP", 1024, NULL, OPENAMP_TASK_PRIORITY, &comm_task);
 
 	/* Create the system init task */
 	state = xTaskCreate(SystemInitTask, (const char *)"Init", 1024, NULL, INIT_TASK_PRIORITY, &SystemInitTaskHandle);
 
 	/* Create the system monitor task */
-	  state = xTaskCreate(SysMonTask, (const char *)"System Monitor", 1024, NULL, SYSMON_TASK_PRIORITY, &system_monitor_task);
+	state = xTaskCreate(SysMonTask, (const char *)"System Monitor", 1024, NULL, SYSMON_TASK_PRIORITY, &system_monitor_task);
 
-	/* Create the pulley1 controller task */
-	  state = xTaskCreate(ControllersPoll, (const char *)"Controllers", 1024, NULL, CONTROLLERS_TASK_PRIORITY, &controllers_task);
+	/* Create the controllers task */
+	state = xTaskCreate(ControllersPoll, (const char *)"Controllers", 1024, NULL, CONTROLLERS_TASK_PRIORITY, &controllers_task);
 
 	if (state != pdPASS)
 	{

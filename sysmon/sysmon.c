@@ -270,17 +270,17 @@ int SysMonPsuPolledPrintfExample(u16 SysMonDeviceId)
     TempRawData = XSysMonPsu_GetAdcData(SysMonInstPtr, XSM_CH_TEMP, XSYSMON_PS);
     TempData = XSysMonPsu_RawToTemperature_OnChip(TempRawData);
     RPU_PRINTF("The Current Temperature is %0d.%03d Centigrades.\n",
-           (int)(TempData), SysMonPsuFractionToInt(TempData));
+               (int)(TempData), SysMonPsuFractionToInt(TempData));
 
     TempRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr, XSM_MAX_TEMP, XSYSMON_PS);
     MaxData = XSysMonPsu_RawToTemperature_OnChip(TempRawData);
     RPU_PRINTF("The Maximum Temperature is %0d.%03d Centigrades. \n",
-           (int)(MaxData), SysMonPsuFractionToInt(MaxData));
+               (int)(MaxData), SysMonPsuFractionToInt(MaxData));
 
     TempRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr, XSM_MIN_TEMP, XSYSMON_PS);
     MinData = XSysMonPsu_RawToTemperature_OnChip(TempRawData);
     RPU_PRINTF("The Minimum Temperature is %0d.%03d Centigrades. \n",
-           (int)(MinData), SysMonPsuFractionToInt(MinData));
+               (int)(MinData), SysMonPsuFractionToInt(MinData));
 
     /*
 	 * Read the VccInt Votage Data (Current/Maximum/Minimum) from the
@@ -289,19 +289,19 @@ int SysMonPsuPolledPrintfExample(u16 SysMonDeviceId)
     VccIntRawData = XSysMonPsu_GetAdcData(SysMonInstPtr, XSM_CH_SUPPLY1, XSYSMON_PS);
     VccIntData = XSysMonPsu_RawToVoltage(VccIntRawData);
     RPU_PRINTF("The Current VCCINT is %0d.%03d Volts. \n",
-           (int)(VccIntData), SysMonPsuFractionToInt(VccIntData));
+               (int)(VccIntData), SysMonPsuFractionToInt(VccIntData));
 
     VccIntRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MAX_SUPPLY1, XSYSMON_PS);
     MaxData = XSysMonPsu_RawToVoltage(VccIntRawData);
     RPU_PRINTF("The Maximum VCCINT is %0d.%03d Volts. \n",
-           (int)(MaxData), SysMonPsuFractionToInt(MaxData));
+               (int)(MaxData), SysMonPsuFractionToInt(MaxData));
 
     VccIntRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MIN_SUPPLY1, XSYSMON_PS);
     MinData = XSysMonPsu_RawToVoltage(VccIntRawData);
     RPU_PRINTF("The Minimum VCCINT is %0d.%03d Volts. \n",
-           (int)(MinData), SysMonPsuFractionToInt(MinData));
+               (int)(MinData), SysMonPsuFractionToInt(MinData));
 
     /*
 	 * Read the VccAux Votage Data (Current/Maximum/Minimum) from the
@@ -310,19 +310,19 @@ int SysMonPsuPolledPrintfExample(u16 SysMonDeviceId)
     VccAuxRawData = XSysMonPsu_GetAdcData(SysMonInstPtr, XSM_CH_SUPPLY3, XSYSMON_PS);
     VccAuxData = XSysMonPsu_RawToVoltage(VccAuxRawData);
     RPU_PRINTF("The Current VCCAUX is %0d.%03d Volts. \n",
-           (int)(VccAuxData), SysMonPsuFractionToInt(VccAuxData));
+               (int)(VccAuxData), SysMonPsuFractionToInt(VccAuxData));
 
     VccAuxRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MAX_SUPPLY3, XSYSMON_PS);
     MaxData = XSysMonPsu_RawToVoltage(VccAuxRawData);
     RPU_PRINTF("The Maximum VCCAUX is %0d.%03d Volts. \n",
-           (int)(MaxData), SysMonPsuFractionToInt(MaxData));
+               (int)(MaxData), SysMonPsuFractionToInt(MaxData));
 
     VccAuxRawData = XSysMonPsu_GetMinMaxMeasurement(SysMonInstPtr,
                                                     XSM_MIN_SUPPLY3, XSYSMON_PS);
     MinData = XSysMonPsu_RawToVoltage(VccAuxRawData);
     RPU_PRINTF("The Minimum VCCAUX is %0d.%03d Volts. \n",
-           (int)(MinData), SysMonPsuFractionToInt(MinData));
+               (int)(MinData), SysMonPsuFractionToInt(MinData));
 
     // printf("Exiting the SysMon Polled Example. \r\n");
 
@@ -431,22 +431,16 @@ void SysMonPoll(sysmon *sysmon)
     }
 
     // start nmt
-    if (R5_cmd.nmt_control == 1 && R5_state.nmt_state == 0)
+    if (R5_cmd.nmt_control == 1 && R5_state.nmt_state == NMT_STOP_STATE)
     {
         //start nmt
         nmt.Start();
-
-        // nmt started
-        R5_state.nmt_state = 1;
     }
 
     // stop nmt
-    if (R5_cmd.nmt_control == 2 && R5_state.nmt_state == 1)
+    if (R5_cmd.nmt_control == 2 && R5_state.nmt_state == NMT_START_STATE)
     {
         //stop nmt
         nmt.Stop(0);
-
-        // nmt stopped
-        R5_state.nmt_state = 0;
     }
 }

@@ -18,29 +18,22 @@
 #define SEND_CONTROLLER_CMD_FROM_APU 3
 #define READ_CONTROLLER_STATE_FROM_APU 4
 
-
-
-
-
-// r5 system state structure
-typedef struct r5_state_type
+// motion command
+enum motion_cmd
 {
-    // the rpmsg type
-    u8 rpmsg_type;
-
-    // the id of the r5 core, 0 or 1
-    u8 r5_id;
-
-    // ps core temperature
-    u8 ps_core_temp;
-
-    // pl core temperature
-    u8 pl_core_temp;
-
-    // nmt state
-    u8 nmt_state;
-
-} r5_state;
+    IDLE = 0,
+    UPCLAW_HOLD,
+    UPCLAW_LOOSE,
+    UpwheelMoveUp,
+    UpwheelMoveDown,
+    PulleysTighten,
+    PulleysLockPos,
+    PulleysAdmittanceControl,
+    PulleysPullUp,
+    PulleysPullDown,
+    DownclawsHold,
+    DownclawsLoose
+};
 
 // r5 system command state structure
 typedef struct r5_cmd_type
@@ -53,6 +46,19 @@ typedef struct r5_cmd_type
 
     // nmt control
     u8 nmt_control;
+
+    /* controllers command */
+    // control frequency
+    u32 control_frequency_KHz;
+
+    // motion command
+    enum motion_cmd cntrlr_motion_cmd;
+
+    // upclaw hold torque
+    s16 upclaw_hold_trq;
+
+    // upclaw loose relative position
+    s32 upclaw_rltv_pos;
 
 } r5_cmd;
 

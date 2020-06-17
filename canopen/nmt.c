@@ -14,6 +14,8 @@ extern struct maxon pulley2;
 extern struct maxon down_claw1;
 extern struct maxon down_claw2;
 
+extern r5_state R5_state;
+
 struct nmt nmt = {
 	.can_device = &ps_can0,
 	.Init = NMTInit,
@@ -55,6 +57,8 @@ void NMTstart(void)
 	{
 		xil_printf("CAN communication error!\r\n");
 	}
+
+	R5_state.nmt_state = NMT_START_STATE;
 }
 
 // nmt start one node
@@ -132,6 +136,8 @@ void NMTstop(u8 slave_id)
 	{
 		RPU_PRINTF("CAN communication error!\n");
 	}
+
+	R5_state.nmt_state = NMT_STOP_STATE;
 }
 
 // cmd sync
@@ -311,5 +317,3 @@ void MotorParaRead(struct can_frame *recv_frame)
 	// RPU_PRINTF("(motor_para->status_word_ >> 5 & 1):%x\n",(motor_para->status_word_ >> 5 & 1));
 	// RPU_PRINTF("(motor_para->status_word_):%x\n",(motor_para->status_word_));
 }
-
-

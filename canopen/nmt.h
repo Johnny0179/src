@@ -5,6 +5,9 @@
 #include "canopen/can.h"
 #include "delay/delay.h"
 
+#define NMT_STOP_STATE 0
+#define NMT_START_STATE 1
+
 // NMT Command Specifier, sent by master to change a slave state, Should not be
 // modified.
 #define NMT_Start_Node 0x01
